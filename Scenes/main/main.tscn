@@ -1,9 +1,9 @@
 [gd_scene load_steps=5 format=3 uid="uid://chgwxhrtw1lln"]
 
-[ext_resource type="Script" path="res://Scenes/main/main.gd" id="1_22s4b"]
-[ext_resource type="Script" path="res://Scenes/ui/hud.gd" id="2_cy82p"]
+[ext_resource type="Script" uid="uid://cfyfhy8nj7yr0" path="res://Scenes/main/main.gd" id="1_22s4b"]
+[ext_resource type="Script" uid="uid://o6ifuvp8iee3" path="res://Scenes/ui/hud.gd" id="2_cy82p"]
 [ext_resource type="PackedScene" uid="uid://d0otd33ubv3hq" path="res://Scenes/ui/turretUI/turret_buy_container.tscn" id="3_pljl8"]
-[ext_resource type="Script" path="res://Scenes/ui/turretUI/turrets_panel.gd" id="3_ryupq"]
+[ext_resource type="Script" uid="uid://brmqp6wit161p" path="res://Scenes/ui/turretUI/turrets_panel.gd" id="3_ryupq"]
 
 [node name="main" type="Node2D"]
 script = ExtResource("1_22s4b")

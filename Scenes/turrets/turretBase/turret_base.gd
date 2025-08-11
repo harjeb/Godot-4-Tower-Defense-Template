@@ -2,15 +2,25 @@ extends Node2D
 class_name Turret
 
 signal turretUpdated
+signal gem_equipped(gem_data: Dictionary)
+signal gem_unequipped
+
+# 新增属性
+var element: String = "neutral"
+var equipped_gem: Dictionary = {}
+var turret_category: String = ""
 
 var turret_type := "":
 	set(value):
 		turret_type = value
-		$Sprite2D.texture = load(Data.turrets[value]["sprite"])
-		$Sprite2D.scale = Vector2(Data.turrets[value]["scale"],Data.turrets[value]["scale"])
-		rotates = Data.turrets[value]["rotates"]
-		for stat in Data.turrets[value]["stats"].keys():
-			set(stat, Data.turrets[value]["stats"][stat])
+		var turret_data = Data.turrets[value]
+		$Sprite2D.texture = load(turret_data["sprite"])
+		$Sprite2D.scale = Vector2(turret_data["scale"], turret_data["scale"])
+		rotates = turret_data["rotates"]
+		element = turret_data.get("element", "neutral")
+		turret_category = turret_data.get("turret_category", "")
+		for stat in turret_data["stats"].keys():
+			set(stat, turret_data["stats"][stat])
 
 #Deploying
 var deployed := false
@@ -62,7 +72,17 @@ func _on_detection_area_area_entered(area):
 	if deployed and not current_target:
 		var area_parent = area.get_parent()
 		if area_parent.is_in_group("enemy"):
-			current_target = area.get_parent()
+			# 检查隐身敌人的特殊逻辑
+			if area_parent.has_method("get_is_stealthed") and area_parent.get_is_stealthed():
+				# 某些炮塔类型可以检测隐身敌人
+				if can_detect_stealth():
+					current_target = area_parent
+			else:
+				current_target = area_parent
+
+func can_detect_stealth() -> bool:
+	# 光元素炮塔或装备光宝石的炮塔可以检测隐身
+	return element == "light" or (equipped_gem.has("element") and equipped_gem.element == "light")
 
 func _on_detection_area_area_exited(area):
 	if deployed and current_target == area.get_parent():
@@ -120,3 +140,83 @@ func attack():
 		pass
 	else:
 		try_get_closest_target()
+
+# 新增方法
+func equip_gem(gem_data: Dictionary):
+	equipped_gem = gem_data
+	if gem_data.has("element"):
+		element = gem_data.element
+	gem_equipped.emit(gem_data)
+	turretUpdated.emit()
+
+func unequip_gem():
+	var old_gem = equipped_gem
+	equipped_gem = {}
+	element = Data.turrets[turret_type].get("element", "neutral")
+	gem_unequipped.emit()
+	turretUpdated.emit()
+
+func calculate_final_damage(base_damage: float, target_element: String) -> float:
+	var final_damage = base_damage
+	
+	# 获取武器盘管理器
+	var weapon_manager = get_weapon_wheel_manager()
+	if not weapon_manager:
+		return final_damage
+	
+	# 应用炮塔类型BUFF (加算)
+	var turret_buff_multiplier = weapon_manager.calculate_turret_multiplier(turret_category)
+	
+	# 应用元素BUFF (加算)
+	var element_buff_multiplier = weapon_manager.calculate_element_multiplier(element)
+		
+	# 应用宝石加成 (加算到元素BUFF)
+	if equipped_gem.has("damage_bonus"):
+		element_buff_multiplier += equipped_gem.damage_bonus
+	
+	# 应用属性克制 (乘算)
+	var effectiveness = ElementSystem.get_effectiveness_multiplier(element, target_element)
+	
+	# 最终计算：基础伤害 × 炮塔类型BUFF × 元素BUFF × 属性克制
+	final_damage = base_damage * turret_buff_multiplier * element_buff_multiplier * effectiveness
+	
+	return final_damage
+
+func get_weapon_wheel_manager() -> WeaponWheelManager:
+	var tree = get_tree()
+	if tree and tree.root:
+		return tree.root.get_node_or_null("WeaponWheelManager") as WeaponWheelManager
+	return null
+
+func get_element_color() -> Color:
+	return ElementSystem.get_element_color(element)
+
+func has_gem_equipped() -> bool:
+	return not equipped_gem.is_empty()
+
+func get_total_damage_multiplier(target_element: String) -> float:
+	var weapon_manager = get_weapon_wheel_manager()
+	if not weapon_manager:
+		return 1.0
+	
+	var turret_multiplier = weapon_manager.calculate_turret_multiplier(turret_category)
+	var element_multiplier = weapon_manager.calculate_element_multiplier(element)
+	
+	if equipped_gem.has("damage_bonus"):
+		element_multiplier += equipped_gem.damage_bonus
+	
+	var effectiveness = ElementSystem.get_effectiveness_multiplier(element, target_element)
+	
+	return turret_multiplier * element_multiplier * effectiveness
+
+func get_turret_info() -> Dictionary:
+	return {
+		"type": turret_type,
+		"level": turret_level,
+		"element": element,
+		"category": turret_category,
+		"equipped_gem": equipped_gem,
+		"damage": damage,
+		"attack_speed": attack_speed,
+		"attack_range": attack_range
+	}

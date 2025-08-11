@@ -1,6 +1,6 @@
 [gd_scene load_steps=82 format=3 uid="uid://dbktwv0atytem"]
 
-[ext_resource type="Script" path="res://Scenes/turrets/meleeTurret/melee_turret.gd" id="1_65sy1"]
+[ext_resource type="Script" uid="uid://bb2pffa548dbr" path="res://Scenes/turrets/meleeTurret/melee_turret.gd" id="1_65sy1"]
 [ext_resource type="Texture2D" uid="uid://83kim8fm0f2s" path="res://Assets/turrets/technoturret.png" id="2_co0py"]
 [ext_resource type="Texture2D" uid="uid://cy1xnogwyjoer" path="res://Assets/vfx/dynamite-pack.png" id="3_6rbxy"]
 [ext_resource type="Texture2D" uid="uid://c3r8upfrvgwf3" path="res://Assets/vfx/explosion 4.png" id="3_pj1bg"]

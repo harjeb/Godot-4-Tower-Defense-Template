@@ -6,6 +6,13 @@ func attack():
 		for a in $DetectionArea.get_overlapping_areas():
 			var collider = a.get_parent()
 			if collider.is_in_group("enemy"):
-				collider.get_damage(damage)
+				# 获取目标元素属性
+				var target_element = "neutral"
+				if collider.has_method("get_element"):
+					target_element = collider.get_element()
+				
+				# 使用增强的伤害计算
+				var final_damage = calculate_final_damage(damage, target_element)
+				collider.get_damage(final_damage)
 	else:
 		try_get_closest_target()

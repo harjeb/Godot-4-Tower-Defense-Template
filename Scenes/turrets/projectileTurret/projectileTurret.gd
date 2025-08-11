@@ -8,7 +8,10 @@ func attack():
 		var projectileScene := preload("res://Scenes/turrets/projectileTurret/bullet/bulletBase.tscn")
 		var projectile := projectileScene.instantiate()
 		projectile.bullet_type = Data.turrets[turret_type]["bullet"]
-		projectile.damage = damage
+		projectile.base_damage = damage
+		projectile.element = element
+		projectile.turret_category = turret_category
+		projectile.equipped_gem = equipped_gem
 		projectile.speed = bulletSpeed
 		projectile.pierce = bulletPierce
 		Globals.projectilesNode.add_child(projectile)
