@@ -8,6 +8,7 @@ var open_details_pane : PanelContainer
 var inventory_ui: InventoryUI
 var weapon_wheel_ui: WeaponWheelUI
 var gem_crafting_ui: GemCraftingUI
+var settings_ui: SettingsUI
 var ui_buttons_container: HBoxContainer
 
 func _ready():
@@ -53,6 +54,8 @@ func _unhandled_key_input(event):
 				toggle_weapon_wheel()
 			KEY_C:
 				toggle_crafting()
+			KEY_S:  # 添加 S 键作为设置快捷键
+				toggle_settings()
 
 func update_enemy_count(remain):
 	%RemainLabel.text = "Enemies: "+str(remain)
@@ -68,7 +71,7 @@ func setup_new_ui_systems():
 	# 创建 UI 按钮容器
 	ui_buttons_container = HBoxContainer.new()
 	ui_buttons_container.position = Vector2(10, 100)
-	ui_buttons_container.size = Vector2(300, 40)
+	ui_buttons_container.size = Vector2(400, 40)  # 增加宽度以容纳新按钮
 	add_child(ui_buttons_container)
 	
 	# 创建背包按钮
@@ -91,6 +94,13 @@ func setup_new_ui_systems():
 	crafting_button.custom_minimum_size = Vector2(80, 35)
 	crafting_button.pressed.connect(_on_crafting_button_pressed)
 	ui_buttons_container.add_child(crafting_button)
+	
+	# 创建游戏设置按钮
+	var settings_button = Button.new()
+	settings_button.text = "设置"
+	settings_button.custom_minimum_size = Vector2(80, 35)
+	settings_button.pressed.connect(_on_settings_button_pressed)
+	ui_buttons_container.add_child(settings_button)
 	
 	# 创建 UI 面板
 	create_ui_panels()
@@ -116,6 +126,12 @@ func create_ui_panels():
 	gem_crafting_ui.crafting_closed.connect(_on_crafting_closed)
 	gem_crafting_ui.gem_crafted.connect(_on_gem_crafted)
 	add_child(gem_crafting_ui)
+	
+	# 创建游戏设置 UI
+	settings_ui = preload("res://Scenes/ui/settings/SettingsUI.gd").new()
+	settings_ui.hide()
+	settings_ui.settings_closed.connect(_on_settings_closed)
+	add_child(settings_ui)
 
 func _input(event):
 	# 处理快捷键
@@ -125,6 +141,8 @@ func _input(event):
 		toggle_weapon_wheel()
 	elif event.is_action_pressed("craft_gems"):
 		toggle_crafting()
+	elif event.is_action_pressed("open_settings"):
+		toggle_settings()
 
 func toggle_inventory():
 	if inventory_ui.visible:
@@ -147,6 +165,13 @@ func toggle_crafting():
 		close_all_ui_panels()
 		gem_crafting_ui.open_crafting()
 
+func toggle_settings():
+	if settings_ui.visible:
+		settings_ui.close_settings()
+	else:
+		close_all_ui_panels()
+		settings_ui.open_settings()
+
 func close_all_ui_panels():
 	if inventory_ui:
 		inventory_ui.hide()
@@ -154,6 +179,8 @@ func close_all_ui_panels():
 		weapon_wheel_ui.hide()
 	if gem_crafting_ui:
 		gem_crafting_ui.hide()
+	if settings_ui:
+		settings_ui.hide()
 
 # UI 事件处理方法
 func _on_inventory_button_pressed():
@@ -165,6 +192,9 @@ func _on_weapon_wheel_button_pressed():
 func _on_crafting_button_pressed():
 	toggle_crafting()
 
+func _on_settings_button_pressed():
+	toggle_settings()
+
 func _on_inventory_closed():
 	pass  # UI 已经处理隐藏
 
@@ -172,6 +202,9 @@ func _on_weapon_wheel_closed():
 	pass  # UI 已经处理隐藏
 
 func _on_crafting_closed():
+	pass  # UI 已经处理隐藏
+
+func _on_settings_closed():
 	pass  # UI 已经处理隐藏
 
 func _on_gem_selected(gem_data: Dictionary):

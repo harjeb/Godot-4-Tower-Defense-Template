@@ -1,6 +1,6 @@
 extends Node
 
-const turrets := {
+var turrets := {
 	"gatling": {
 		"stats": {
 			"damage": 10,
@@ -100,6 +100,41 @@ const turrets := {
 		"turret_category": "melee",
 	},
 }
+
+func _ready():
+	load_custom_turret_data()
+
+func load_custom_turret_data():
+	# 检查是否存在自定义炮塔数据文件
+	var save_file_path = "user://saved_turrets/turret_data.json"
+	if FileAccess.file_exists(save_file_path):
+		var file = FileAccess.open(save_file_path, FileAccess.READ)
+		if file:
+			var json_string = file.get_as_text()
+			file.close()
+			
+			var json = JSON.new()
+			var parse_result = json.parse(json_string)
+			
+			if parse_result == OK:
+				var custom_data = json.data
+				
+				# 合并自定义数据到现有数据中
+				for turret_id in custom_data.keys():
+					if turrets.has(turret_id):
+						# 更新现有炮塔数据
+						merge_turret_data(turrets[turret_id], custom_data[turret_id])
+					else:
+						# 添加新的炮塔类型
+						turrets[turret_id] = custom_data[turret_id]
+
+func merge_turret_data(original: Dictionary, custom: Dictionary):
+	# 递归合并字典数据
+	for key in custom.keys():
+		if original.has(key) and typeof(original[key]) == TYPE_DICTIONARY and typeof(custom[key]) == TYPE_DICTIONARY:
+			merge_turret_data(original[key], custom[key])
+		else:
+			original[key] = custom[key]
 
 const stats := {
 	"damage": {"name": "Damage"},
