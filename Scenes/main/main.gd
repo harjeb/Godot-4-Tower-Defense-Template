@@ -60,6 +60,16 @@ func add_managers():
 	wave_manager.name = "WaveManager"
 	add_child(wave_manager)
 	
+	# 创建并添加塔科技系统
+	var tower_tech_system = TowerTechSystem.new()
+	tower_tech_system.name = "TowerTechSystem"
+	add_child(tower_tech_system)
+	
+	# 创建并添加效果管理器
+	var effect_manager = EffectManager.new()
+	effect_manager.name = "EffectManager"
+	add_child(effect_manager)
+	
 	# 添加一些初始物品用于测试 (可选)
 	call_deferred("add_test_items")  
 

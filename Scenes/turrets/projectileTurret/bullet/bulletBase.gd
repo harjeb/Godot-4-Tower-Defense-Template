@@ -19,6 +19,8 @@ var time: float = 1.0
 var element: String = "neutral"
 var turret_category: String = ""
 var equipped_gem: Dictionary = {}
+var source_tower: Turret = null  # 发射这个子弹的塔
+var gem_effects: Array = []      # 宝石效果列表
 
 func _process(delta):
 	if target:
@@ -39,6 +41,15 @@ func _on_area_2d_area_entered(area):
 		# 使用增强的伤害计算
 		var final_damage = calculate_enhanced_damage(target_element)
 		obj.get_damage(final_damage)
+		
+		# 应用宝石效果
+		_apply_gem_effects(obj)
+		
+		# 通知充能系统命中了敌人（只有非充能技能投射物才增加充能）
+		if source_tower and not has_meta("is_charge_ability"):
+			var charge_system = get_charge_system()
+			if charge_system:
+				charge_system.add_charge_on_hit(source_tower)
 		
 	if pierce == 0:
 		queue_free()
@@ -75,5 +86,43 @@ func get_weapon_wheel_manager() -> WeaponWheelManager:
 		return tree.root.get_node_or_null("WeaponWheelManager") as WeaponWheelManager
 	return null
 
+func get_charge_system() -> ChargeSystem:
+	var tree = get_tree()
+	if tree and tree.current_scene:
+		return tree.current_scene.get_node_or_null("ChargeSystem") as ChargeSystem
+	return null
+
 func _on_disappear_timer_timeout():
 	queue_free()
+
+# 宝石效果应用系统
+func _apply_gem_effects(target: Node):
+	if gem_effects.is_empty():
+		return
+	
+	var effect_manager = get_effect_manager()
+	if not effect_manager:
+		return
+	
+	# 应用所有宝石效果
+	for effect_name in gem_effects:
+		var effect_data = Data.effects.get(effect_name, {})
+		if not effect_data.is_empty():
+			effect_manager.apply_effect(target, effect_name, effect_data, self)
+
+func get_effect_manager() -> EffectManager:
+	var tree = get_tree()
+	if tree and tree.root:
+		return tree.root.get_node_or_null("EffectManager") as EffectManager
+	return null
+
+# 设置宝石效果（由发射塔调用）
+func setup_gem_effects(tower: Turret):
+	if not tower or not tower.has_method("get_active_gem_effects"):
+		return
+	
+	gem_effects = tower.get_active_gem_effects()
+	equipped_gem = tower.equipped_gem
+	element = tower.element
+	turret_category = tower.turret_category
+	source_tower = tower

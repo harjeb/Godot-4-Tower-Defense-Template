@@ -28,6 +28,9 @@ func set_props():
 		var statLabel := statLabelScene.instantiate()
 		statLabel.text = Data.stats[stat]["name"]+" "+str(round(turret.get(stat)))
 		%Stats.add_child(statLabel)
+	
+	# 显示宝石技能信息
+	display_gem_skills()
 
 func _on_upgrade_button_pressed():
 	if check_can_upgrade():
@@ -60,3 +63,42 @@ func _on_sell_button_pressed():
 
 func _on_close_button_pressed():
 	turret.close_details_pane()
+
+# 显示宝石技能信息
+func display_gem_skills():
+	if not turret or not turret.has_method("get_gem_skills_info"):
+		return
+	
+	var gem_info = turret.get_gem_skills_info()
+	if gem_info.is_empty():
+		return
+	
+	var skill_name = gem_info[0]
+	var skill_description = gem_info[1]
+	
+	# 创建分隔线
+	var separator = HSeparator.new()
+	separator.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	%Stats.add_child(separator)
+	
+	# 创建宝石技能标题
+	var titleLabel := Label.new()
+	titleLabel.text = "宝石技能:"
+	titleLabel.add_theme_color_override("font_color", Color.ORANGE)
+	titleLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	%Stats.add_child(titleLabel)
+	
+	# 创建技能名称
+	var nameLabel := Label.new()
+	nameLabel.text = skill_name
+	nameLabel.add_theme_color_override("font_color", Color.YELLOW)
+	nameLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	%Stats.add_child(nameLabel)
+	
+	# 创建技能描述
+	var descLabel := Label.new()
+	descLabel.text = skill_description
+	descLabel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	descLabel.custom_minimum_size = Vector2(200, 0)
+	descLabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	%Stats.add_child(descLabel)

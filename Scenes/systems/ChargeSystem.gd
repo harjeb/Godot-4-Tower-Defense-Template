@@ -8,18 +8,38 @@ var tower_charges: Dictionary = {}
 var max_charge: int = 100
 var charge_speed_multiplier: float = 1.0
 
+# 充能增加规则
+var charge_per_hit: int = 2  # 命中1个单位增加2点
+var charge_per_second: int = 3  # 每秒增加3点
+var passive_charge_timer: Timer
+
 func _ready():
 	if Globals.has_signal("turret_placed"):
 		Globals.turret_placed.connect(_on_tower_placed)
 	if Globals.has_signal("turret_removed"):  
 		Globals.turret_removed.connect(_on_tower_removed)
+	
+	# 创建被动充能计时器
+	setup_passive_charge_timer()
+
+func setup_passive_charge_timer():
+	# 创建被动充能计时器
+	passive_charge_timer = Timer.new()
+	passive_charge_timer.wait_time = 1.0  # 每秒触发
+	passive_charge_timer.timeout.connect(_on_passive_charge_timeout)
+	add_child(passive_charge_timer)
+	passive_charge_timer.start()
 
 func initialize_tower_charge(tower: Turret):
 	if not tower or not tower.deployed:
 		return
 	tower_charges[tower.get_instance_id()] = 0
 
-func add_charge(tower: Turret, amount: int = 0):
+func add_charge_on_hit(tower: Turret):
+	# 命中敌人时调用，增加2点充能
+	add_charge(tower, charge_per_hit)
+
+func add_charge(tower: Turret, amount: int):
 	if not tower or not tower.deployed:
 		return
 	
@@ -27,18 +47,22 @@ func add_charge(tower: Turret, amount: int = 0):
 	if not tower_charges.has(tower_id):
 		initialize_tower_charge(tower)
 	
-	var charge_amount = amount
-	if charge_amount == 0:
-		charge_amount = Data.charge_system.charge_per_attack.get(tower.turret_type, 5)
-	
 	# Apply charge speed multiplier from talents
-	charge_amount = int(charge_amount * charge_speed_multiplier)
+	var charge_amount = int(amount * charge_speed_multiplier)
 	
 	tower_charges[tower_id] = min(tower_charges[tower_id] + charge_amount, max_charge)
+	tower.current_charge = tower_charges[tower_id]  # Update tower's charge value
 	charge_updated.emit(tower, tower_charges[tower_id])
 	
 	if tower_charges[tower_id] >= max_charge:
 		trigger_charge_ability(tower)
+
+func _on_passive_charge_timeout():
+	# 每秒为所有有充能技能的塔增加3点充能
+	var all_towers = get_all_towers()
+	for tower in all_towers:
+		if tower and tower.deployed and has_charge_ability(tower.turret_type):
+			add_charge(tower, charge_per_second)
 
 func trigger_charge_ability(tower: Turret):
 	if not tower or not has_charge_ability(tower.turret_type):
@@ -102,11 +126,12 @@ func create_charge_projectile(tower: Turret, target_pos: Vector2, damage_multipl
 	projectile.bullet_type = "fire"
 	projectile.base_damage = tower.damage * damage_multiplier
 	projectile.element = tower.element
+	projectile.source_tower = tower  # 设置发射塔的引用
 	# Apply projectile speed talent boost
 	var speed_multiplier = Globals.get("projectile_speed_boost") if Globals.has_method("get") and Globals.get("projectile_speed_boost") != null else 1.0
 	projectile.speed = 300.0 * speed_multiplier
 	# 标记为充能技能投射物，禁用DA/TA触发
-	projectile.set("is_charge_ability", true)
+	projectile.set_meta("is_charge_ability", true)
 	
 	Globals.projectilesNode.add_child(projectile)
 	projectile.position = tower.position
@@ -118,6 +143,15 @@ func _on_tower_placed(tower: Turret):
 func _on_tower_removed(tower: Turret):
 	if tower:
 		tower_charges.erase(tower.get_instance_id())
+
+func get_all_towers() -> Array:
+	var towers = []
+	if get_tree() and get_tree().current_scene:
+		var all_nodes = get_tree().get_nodes_in_group("turret")
+		for node in all_nodes:
+			if node is Turret and node.deployed:
+				towers.append(node)
+	return towers
 
 func set_charge_multiplier(multiplier: float):
 	charge_speed_multiplier = multiplier

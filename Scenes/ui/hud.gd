@@ -72,6 +72,7 @@ func reset():
 # 新增属性
 var summon_stone_ui: SummonStoneUI
 var tech_tree_ui: TechTreeUI
+var tower_tech_ui: TowerTechUI
 var wave_manager: WaveManager
 
 # 波次控制UI
@@ -115,6 +116,13 @@ func setup_new_ui_systems():
 	tech_tree_button.pressed.connect(_on_tech_tree_button_pressed)
 	ui_buttons_container.add_child(tech_tree_button)
 	
+	# 创建塔科技按钮
+	var tower_tech_button = Button.new()
+	tower_tech_button.text = "塔科技"
+	tower_tech_button.custom_minimum_size = Vector2(80, 35)
+	tower_tech_button.pressed.connect(_on_tower_tech_button_pressed)
+	ui_buttons_container.add_child(tower_tech_button)
+	
 	# 创建游戏设置按钮
 	var settings_button = Button.new()
 	settings_button.text = "设置"
@@ -153,6 +161,13 @@ func create_ui_panels():
 	tech_tree_ui.name = "TechTreeUI"
 	tech_tree_ui.talent_tree_closed.connect(_on_talent_tree_closed)
 	add_child(tech_tree_ui)
+	
+	# 创建塔科技 UI
+	tower_tech_ui = preload("res://Scenes/ui/towerTech/TowerTechUI.gd").new()
+	tower_tech_ui.hide()
+	tower_tech_ui.name = "TowerTechUI"
+	tower_tech_ui.tower_tech_closed.connect(_on_tower_tech_closed)
+	add_child(tower_tech_ui)
 	
 	# 创建游戏设置 UI
 	settings_ui = preload("res://Scenes/ui/settings/SettingsUI.gd").new()
@@ -206,6 +221,13 @@ func toggle_tech_tree():
 		close_all_ui_panels()
 		tech_tree_ui.open_talent_tree()
 
+func toggle_tower_tech():
+	if tower_tech_ui.visible:
+		tower_tech_ui.close_tower_tech_tree()
+	else:
+		close_all_ui_panels()
+		tower_tech_ui.open_tower_tech_tree()
+
 func toggle_settings():
 	if settings_ui.visible:
 		settings_ui.close_settings()
@@ -222,6 +244,8 @@ func close_all_ui_panels():
 		gem_crafting_ui.hide()
 	if tech_tree_ui:
 		tech_tree_ui.hide()
+	if tower_tech_ui:
+		tower_tech_ui.hide()
 	if settings_ui:
 		settings_ui.hide()
 
@@ -240,6 +264,9 @@ func _on_settings_button_pressed():
 
 func _on_tech_tree_button_pressed():
 	toggle_tech_tree()
+
+func _on_tower_tech_button_pressed():
+	toggle_tower_tech()
 
 func _on_inventory_closed():
 	pass  # UI 已经处理隐藏
@@ -414,4 +441,8 @@ func _on_continue_from_completion(info_panel: Panel):
 
 func _on_talent_tree_closed():
 	# 天赋树关闭时的处理
+	pass
+
+func _on_tower_tech_closed():
+	# 塔科技树关闭时的处理
 	pass

@@ -161,9 +161,19 @@ func upgrade_turret():
 
 func attack():
 	if is_instance_valid(current_target):
-		pass
+		# For non-projectile towers, directly call charge system when attacking
+		if turret_category != "projectile":
+			var charge_system = get_charge_system()
+			if charge_system and has_charge_ability():
+				charge_system.add_charge_on_hit(self)
 	else:
 		try_get_closest_target()
+
+func get_charge_system() -> ChargeSystem:
+	var tree = get_tree()
+	if tree and tree.current_scene:
+		return tree.current_scene.get_node_or_null("ChargeSystem") as ChargeSystem
+	return null
 
 ## Calculate number of attacks based on DA/TA probability
 ## Returns 1 (normal), 2 (DA), or 3 (TA)
@@ -228,17 +238,41 @@ func get_passive_synergy_manager():
 	return null
 
 # 新增方法
-func equip_gem(gem_data: Dictionary):
+func equip_gem(gem_data: Dictionary) -> bool:
+	# Check if tower can equip this gem level
+	var gem_level = gem_data.get("level", 1)
+	if not can_equip_gem_level(gem_level):
+		return false
+	
 	equipped_gem = gem_data
 	if gem_data.has("element"):
 		element = gem_data.element
+	
+	# 应用宝石技能
+	_apply_gem_skills()
+	
 	gem_equipped.emit(gem_data)
 	turretUpdated.emit()
+	return true
+
+func can_equip_gem_level(gem_level: int) -> bool:
+	if tower_tech_system:
+		return tower_tech_system.can_tower_equip_gem(turret_type, gem_level)
+	return gem_level <= 1  # Default: only level 1 gems if no tech system
+
+func get_max_gem_level() -> int:
+	if tower_tech_system:
+		return tower_tech_system.get_tower_max_gem_level(turret_type)
+	return 1
 
 func unequip_gem():
 	var old_gem = equipped_gem
 	equipped_gem = {}
 	element = Data.turrets[turret_type].get("element", "neutral")
+	
+	# 移除宝石技能效果
+	_remove_gem_skills()
+	
 	gem_unequipped.emit()
 	turretUpdated.emit()
 
@@ -313,9 +347,14 @@ func get_turret_info() -> Dictionary:
 var current_charge: int = 0
 var charge_system: ChargeSystem
 
+# Tower Tech System Integration
+var tower_tech_system: TowerTechSystem
+var tech_specialization: String = "1"
+
 func _ready():
 	# Existing _ready code...
 	find_charge_system()
+	find_tower_tech_system()
 
 func find_charge_system():
 	var tree = get_tree()
@@ -344,3 +383,230 @@ func can_use_charge_ability() -> bool:
 
 func has_charge_ability() -> bool:
 	return charge_system and charge_system.has_charge_ability(turret_type)
+
+func find_tower_tech_system():
+	var tree = get_tree()
+	if tree and tree.current_scene:
+		tower_tech_system = tree.current_scene.get_node_or_null("TowerTechSystem")
+		if tower_tech_system:
+			tech_specialization = tower_tech_system.get_tower_tech_specialization(turret_type)
+			# Apply tech bonuses when tower is ready
+			call_deferred("apply_tech_bonuses")
+
+func apply_tech_bonuses():
+	if tower_tech_system and deployed:
+		tower_tech_system.apply_tech_bonuses_to_tower(self)
+
+# 宝石技能系统
+func _apply_gem_skills():
+	if equipped_gem.is_empty():
+		return
+	
+	var tower_type_key = _get_tower_type_key()
+	if tower_type_key == "":
+		return
+	
+	var gem_skills = equipped_gem.get("tower_skills", {}).get(tower_type_key, {})
+	if gem_skills.is_empty():
+		return
+	
+	# 应用技能效果
+	for effect_name in gem_skills.effects:
+		var effect_data = Data.effects.get(effect_name, {})
+		if not effect_data.is_empty():
+			_apply_tower_effect(effect_data)
+
+func _remove_gem_skills():
+	# 移除所有宝石技能效果
+	# 这里需要根据具体实现来清理效果
+	pass
+
+func _get_tower_type_key() -> String:
+	# 根据塔类型返回对应的key
+	match turret_category:
+		"projectile":
+			return "arrow_tower"
+		"melee":
+			return "capture_tower"
+		"ray":
+			return "mage_tower"
+		"pulse":
+			return "pulse_tower"
+		"bounce":
+			return "弹射塔"
+		"aura":
+			return "aura_tower"
+		"weakness":
+			return "weakness_tower"
+		_:
+			# 特殊塔类型处理
+			if "感应" in turret_type:
+				return "感应塔"
+			elif "末日" in turret_type:
+				return "末日塔"
+			else:
+				return ""
+
+func _apply_tower_effect(effect_data: Dictionary):
+	match effect_data.type:
+		"stat_modifier":
+			_apply_stat_modifier(effect_data)
+		"attack_modifier":
+			_apply_attack_modifier(effect_data)
+		"damage_modifier":
+			_apply_damage_modifier(effect_data)
+		"special":
+			_apply_special_effect(effect_data)
+
+func _apply_stat_modifier(effect_data: Dictionary):
+	var stat = effect_data.get("stat")
+	var operation = effect_data.get("operation")
+	var value = effect_data.get("value")
+	
+	if stat == "" or operation == "":
+		return
+	
+	match stat:
+		"damage":
+			if operation == "multiply":
+				damage *= value
+			elif operation == "add":
+				damage += value
+		"attack_speed":
+			if operation == "multiply":
+				attack_speed *= value
+			elif operation == "add":
+				attack_speed += value
+		"attack_range":
+			if operation == "multiply":
+				attack_range *= value
+			elif operation == "add":
+				attack_range += value
+		"damage_interval":
+			if operation == "add":
+				# 伤害间隔修改（用于末日塔）
+				if has_method("set_damage_interval"):
+					call("set_damage_interval", get("damage_interval", 1.0) + value)
+		"movement_speed":
+			# 移动速度修改（用于捕获塔的减速效果）
+			pass
+		"defense":
+			# 防御力修改（用于虚弱塔）
+			pass
+		"charge_speed":
+			# 充能速度修改（用于光环塔）
+			pass
+
+func _apply_attack_modifier(effect_data: Dictionary):
+	var property = effect_data.get("property")
+	var value = effect_data.get("value")
+	
+	if property == "target_count":
+		# 多目标攻击（用于箭塔）
+		if has_method("set_target_count"):
+			call("set_target_count", value)
+
+func _apply_damage_modifier(effect_data: Dictionary):
+	var target_element = effect_data.get("target_element")
+	var multiplier = effect_data.get("multiplier")
+	
+	# 元素伤害加成（用于箭塔对风属性敌人）
+	if target_element != "" and multiplier != 1.0:
+		if has_method("set_element_damage_multiplier"):
+			call("set_element_damage_multiplier", target_element, multiplier)
+
+func _apply_special_effect(effect_data: Dictionary):
+	var effect_type = effect_data.get("effect_type")
+	
+	match effect_type:
+		"area_burn":
+			# 范围灼烧效果（用于捕获塔）
+			_setup_area_burn_effect()
+		"interrupt":
+			# 打断技能引导（用于脉冲塔）
+			_setup_interrupt_effect()
+		"chance_imprison":
+			# 概率禁锢效果（用于脉冲塔）
+			_setup_chance_imprison_effect(effect_data)
+		"infinite_duration":
+			# 无限持续时间（用于末日塔）
+			_setup_infinite_duration_effect()
+		"knockback":
+			# 击退效果（用于脉冲塔）
+			_setup_knockback_effect()
+		"chance_carbonization":
+			# 概率炭化效果（用于脉冲塔）
+			_setup_chance_carbonization_effect(effect_data)
+		"chain_multiplier":
+			# 连锁伤害倍率（用于弹射塔）
+			_setup_chain_damage_multiplier()
+		"fire_field":
+			# 火海效果（用于法师塔）
+			_setup_fire_field_effect(effect_data)
+		"explosion_on_death":
+			# 死亡爆炸效果（用于法师塔）
+			_setup_death_explosion_effect()
+		"carbonization_field":
+			# 炭化领域效果（用于捕获塔）
+			_setup_carbonization_field_effect(effect_data)
+
+# 特殊效果设置方法（占位符，具体实现需要根据塔类型）
+func _setup_area_burn_effect():
+	pass
+
+func _setup_interrupt_effect():
+	pass
+
+func _setup_chance_imprison_effect(effect_data: Dictionary):
+	pass
+
+func _setup_infinite_duration_effect():
+	pass
+
+func _setup_knockback_effect():
+	pass
+
+func _setup_chance_carbonization_effect(effect_data: Dictionary):
+	pass
+
+func _setup_chain_damage_multiplier():
+	pass
+
+func _setup_fire_field_effect(effect_data: Dictionary):
+	pass
+
+func _setup_death_explosion_effect():
+	pass
+
+func _setup_carbonization_field_effect(effect_data: Dictionary):
+	pass
+
+# 获取宝石技能信息
+func get_gem_skills_info() -> Array:
+	if equipped_gem.is_empty():
+		return []
+	
+	var tower_type_key = _get_tower_type_key()
+	if tower_type_key == "":
+		return []
+	
+	var gem_skills = equipped_gem.get("tower_skills", {}).get(tower_type_key, {})
+	if gem_skills.is_empty():
+		return []
+	
+	return [gem_skills.name, gem_skills.description]
+
+# 获取当前激活的宝石效果列表
+func get_active_gem_effects() -> Array:
+	if equipped_gem.is_empty():
+		return []
+	
+	var tower_type_key = _get_tower_type_key()
+	if tower_type_key == "":
+		return []
+	
+	var gem_skills = equipped_gem.get("tower_skills", {}).get(tower_type_key, {})
+	if gem_skills.is_empty():
+		return []
+	
+	return gem_skills.effects

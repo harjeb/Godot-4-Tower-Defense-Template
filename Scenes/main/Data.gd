@@ -579,24 +579,165 @@ const element_effectiveness := {
 # 宝石数据
 const gems := {
 	"fire_basic": {
-		"name": "初级火宝石",
+		"name": "火焰宝石 1级",
 		"element": "fire",
 		"level": 1,
 		"damage_bonus": 0.10,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "火箭",
+				"description": "命中单位受到灼烧DEBUFF",
+				"effects": ["burn_debuff_1"]
+			},
+			"capture_tower": {
+				"name": "火网",
+				"description": "范围内所有敌方受到灼热",
+				"effects": ["burn_area_1"]
+			},
+			"mage_tower": {
+				"name": "火球",
+				"description": "伤害增加20%，命中单位受到灼烧",
+				"effects": ["damage_boost_20", "burn_debuff_1"]
+			},
+			"感应塔": {
+				"name": "火捆",
+				"description": "范围内的隐身单位受到2层灼烧，受到伤害增加5%",
+				"effects": ["burn_debuff_2", "damage_taken_boost_5"]
+			},
+			"末日塔": {
+				"name": "痛楚",
+				"description": "伤害间隔降低0.2",
+				"effects": ["damage_interval_reduction_0.2"]
+			},
+			"pulse_tower": {
+				"name": "火焰脉冲",
+				"description": "攻击范围内所有单位灼热",
+				"effects": ["burn_area_1"]
+			},
+			"弹射塔": {
+				"name": "火弹",
+				"description": "被弹射目标灼热",
+				"effects": ["burn_debuff_1"]
+			},
+			"aura_tower": {
+				"name": "炽热光环",
+				"description": "范围内所有塔的攻击速度+3%",
+				"effects": ["attack_speed_boost_3"]
+			},
+			"weakness_tower": {
+				"name": "高温",
+				"description": "防御力降低5%，受到一层灼烧",
+				"effects": ["defense_reduction_5", "burn_debuff_1"]
+			}
+		},
 		"sprite": "res://Assets/gems/fire_basic.png"
 	},
 	"fire_intermediate": {
-		"name": "中级火宝石", 
+		"name": "炽热之心 2级",
 		"element": "fire",
 		"level": 2,
 		"damage_bonus": 0.20,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "炽火箭",
+				"description": "命中单位受到3层灼烧，对风属性伤害增加10%",
+				"effects": ["burn_debuff_3", "wind_damage_boost_10"]
+			},
+			"capture_tower": {
+				"name": "焦油火网",
+				"description": "受到灼热3层，移动速度降低30%，持续4秒",
+				"effects": ["burn_debuff_3", "slow_30"]
+			},
+			"mage_tower": {
+				"name": "天火炼狱",
+				"description": "伤害增加30%，范围内造成火海持续4秒，所有目标受到3层灼烧",
+				"effects": ["damage_boost_30", "fire_field_4s", "burn_debuff_3"]
+			},
+			"感应塔": {
+				"name": "火牢",
+				"description": "范围内的隐身单位受到3层灼烧，受到伤害增加10%",
+				"effects": ["burn_debuff_3", "damage_taken_boost_10"]
+			},
+			"末日塔": {
+				"name": "窒息烟尘",
+				"description": "伤害间隔降低0.25，持续时间增加10S",
+				"effects": ["damage_interval_reduction_0.25", "duration_increase_10s"]
+			},
+			"pulse_tower": {
+				"name": "震荡脉冲",
+				"description": "攻击范围内所有单位3层灼烧，打断技能引导，25%几率禁锢0.5秒",
+				"effects": ["burn_debuff_3", "interrupt_cast", "imprison_chance_25_0.5s"]
+			},
+			"弹射塔": {
+				"name": "炎爆弹射",
+				"description": "被弹射目标灼热3层，对单位造成0.1S炭化",
+				"effects": ["burn_debuff_3", "carbonization_0.1s"]
+			},
+			"aura_tower": {
+				"name": "炎热光环",
+				"description": "范围内所有塔的攻击速度+5%，充能速度加10%",
+				"effects": ["attack_speed_boost_5", "charge_speed_boost_10"]
+			},
+			"weakness_tower": {
+				"name": "中暑",
+				"description": "防御力降低10%，受到五层灼烧",
+				"effects": ["defense_reduction_10", "burn_debuff_5"]
+			}
+		},
 		"sprite": "res://Assets/gems/fire_intermediate.png"
 	},
 	"fire_advanced": {
-		"name": "高级火宝石",
-		"element": "fire", 
+		"name": "炎狱之魂 3级",
+		"element": "fire",
 		"level": 3,
 		"damage_bonus": 0.35,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "炙热火雨",
+				"description": "单体攻击变为3目标攻击，命中单位受到5层灼烧，对风属性伤害增加30%",
+				"effects": ["multi_target_3", "burn_debuff_5", "wind_damage_boost_30"]
+			},
+			"capture_tower": {
+				"name": "炭化领域",
+				"description": "施放焦油火网，同时在目标范围生成炭化地面，敌人在范围内停留超过2.5秒受到炭化，持续1.5秒",
+				"effects": ["burn_debuff_3", "slow_30", "carbonization_field_2.5s"]
+			},
+			"mage_tower": {
+				"name": "超新星引爆",
+				"description": "伤害增加50%，范围内造成火海持续4秒，火海内死亡的敌人爆炸，对周围敌人造成伤害并增加5层灼热",
+				"effects": ["damage_boost_50", "fire_field_4s", "death_explosion"]
+			},
+			"感应塔": {
+				"name": "火狱",
+				"description": "范围内的隐身单位立即受到2S禁锢和5层灼烧，受到伤害增加20%",
+				"effects": ["imprison_2s", "burn_debuff_5", "damage_taken_boost_20"]
+			},
+			"末日塔": {
+				"name": "热死病",
+				"description": "持续时间无限，伤害间隔降低0.3",
+				"effects": ["duration_infinite", "damage_interval_reduction_0.3"]
+			},
+			"pulse_tower": {
+				"name": "地狱火风暴",
+				"description": "每次脉冲将范围内所有敌人向外推开，70%炭化0.75秒，敌人变得脆弱，受到伤害增加25%持续3秒",
+				"effects": ["knockback_enemies", "carbonization_chance_70_0.75s", "vulnerability_25"]
+			},
+			"弹射塔": {
+				"name": "爆燃连锁",
+				"description": "对单位造成0.5S炭化，弹射到的目标灼热层数越高伤害越高，倍率=1+(层数+25)/100",
+				"effects": ["carbonization_0.5s", "chain_damage_multiplier"]
+			},
+			"aura_tower": {
+				"name": "炙热光环",
+				"description": "范围内所有塔的攻击速度+10%，充能速度加20%",
+				"effects": ["attack_speed_boost_10", "charge_speed_boost_20"]
+			},
+			"weakness_tower": {
+				"name": "热射病",
+				"description": "防御力降低15%，受到八层灼烧",
+				"effects": ["defense_reduction_15", "burn_debuff_8"]
+			}
+		},
 		"sprite": "res://Assets/gems/fire_advanced.png"
 	},
 	"ice_basic": {
@@ -703,6 +844,280 @@ const gems := {
 		"level": 3,
 		"damage_bonus": 0.35,
 		"sprite": "res://Assets/gems/dark_advanced.png"
+	}
+}
+
+# 效果定义
+const effects := {
+	# 灼烧效果
+	"burn_debuff_1": {
+		"type": "debuff",
+		"debuff_type": "burn",
+		"stacks": 1,
+		"damage_per_second": 5.0,
+		"duration": 3.0
+	},
+	"burn_debuff_3": {
+		"type": "debuff", 
+		"debuff_type": "burn",
+		"stacks": 3,
+		"damage_per_second": 5.0,
+		"duration": 3.0
+	},
+	"burn_debuff_5": {
+		"type": "debuff",
+		"debuff_type": "burn", 
+		"stacks": 5,
+		"damage_per_second": 5.0,
+		"duration": 3.0
+	},
+	"burn_debuff_8": {
+		"type": "debuff",
+		"debuff_type": "burn", 
+		"stacks": 8,
+		"damage_per_second": 5.0,
+		"duration": 3.0
+	},
+	
+	# 属性修改器
+	"damage_boost_20": {
+		"type": "stat_modifier",
+		"stat": "damage",
+		"operation": "multiply",
+		"value": 1.20
+	},
+	"damage_boost_30": {
+		"type": "stat_modifier",
+		"stat": "damage",
+		"operation": "multiply",
+		"value": 1.30
+	},
+	"damage_boost_50": {
+		"type": "stat_modifier",
+		"stat": "damage",
+		"operation": "multiply",
+		"value": 1.50
+	},
+	
+	# 攻击修改器
+	"multi_target_3": {
+		"type": "attack_modifier",
+		"property": "target_count",
+		"value": 3
+	},
+	"multi_target_5": {
+		"type": "attack_modifier",
+		"property": "target_count",
+		"value": 5
+	},
+	
+	# 伤害修改器
+	"wind_damage_boost_10": {
+		"type": "damage_modifier",
+		"target_element": "wind",
+		"multiplier": 1.10
+	},
+	"wind_damage_boost_30": {
+		"type": "damage_modifier",
+		"target_element": "wind",
+		"multiplier": 1.30
+	},
+	
+	# 防御修改器
+	"defense_reduction_5": {
+		"type": "stat_modifier",
+		"stat": "defense",
+		"operation": "multiply",
+		"value": 0.95
+	},
+	"defense_reduction_10": {
+		"type": "stat_modifier",
+		"stat": "defense",
+		"operation": "multiply",
+		"value": 0.90
+	},
+	"defense_reduction_15": {
+		"type": "stat_modifier",
+		"stat": "defense",
+		"operation": "multiply",
+		"value": 0.85
+	},
+	
+	# 攻速修改器
+	"attack_speed_boost_3": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 1.03
+	},
+	"attack_speed_boost_5": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 1.05
+	},
+	"attack_speed_boost_10": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 1.10
+	},
+	
+	# 充能速度修改器
+	"charge_speed_boost_10": {
+		"type": "stat_modifier",
+		"stat": "charge_speed",
+		"operation": "multiply",
+		"value": 1.10
+	},
+	"charge_speed_boost_20": {
+		"type": "stat_modifier",
+		"stat": "charge_speed",
+		"operation": "multiply",
+		"value": 1.20
+	},
+	
+	# 伤害间隔修改器
+	"damage_interval_reduction_0.2": {
+		"type": "stat_modifier",
+		"stat": "damage_interval",
+		"operation": "add",
+		"value": -0.2
+	},
+	"damage_interval_reduction_0.25": {
+		"type": "stat_modifier",
+		"stat": "damage_interval",
+		"operation": "add",
+		"value": -0.25
+	},
+	"damage_interval_reduction_0.3": {
+		"type": "stat_modifier",
+		"stat": "damage_interval",
+		"operation": "add",
+		"value": -0.3
+	},
+	
+	# 特殊效果
+	"carbonization_0.1s": {
+		"type": "debuff",
+		"debuff_type": "炭化",
+		"duration": 0.1
+	},
+	"carbonization_0.5s": {
+		"type": "debuff",
+		"debuff_type": "炭化",
+		"duration": 0.5
+	},
+	"carbonization_1.5s": {
+		"type": "debuff",
+		"debuff_type": "炭化",
+		"duration": 1.5
+	},
+	"imprison_2s": {
+		"type": "debuff",
+		"debuff_type": "禁锢",
+		"duration": 2.0
+	},
+	"vulnerability_25": {
+		"type": "debuff",
+		"debuff_type": "脆弱",
+		"damage_increase": 0.25,
+		"duration": 3.0
+	},
+	
+	# 移动速度修改器
+	"slow_30": {
+		"type": "stat_modifier",
+		"stat": "movement_speed",
+		"operation": "multiply",
+		"value": 0.70,
+		"duration": 4.0
+	},
+	
+	# 伤害承受增加
+	"damage_taken_boost_5": {
+		"type": "stat_modifier",
+		"stat": "damage_taken",
+		"operation": "multiply",
+		"value": 1.05,
+		"duration": 3.0
+	},
+	"damage_taken_boost_10": {
+		"type": "stat_modifier",
+		"stat": "damage_taken",
+		"operation": "multiply",
+		"value": 1.10,
+		"duration": 3.0
+	},
+	"damage_taken_boost_20": {
+		"type": "stat_modifier",
+		"stat": "damage_taken",
+		"operation": "multiply",
+		"value": 1.20,
+		"duration": 3.0
+	},
+	
+	# 特殊效果（占位符，后续实现）
+	"burn_area_1": {
+		"type": "special",
+		"effect_type": "area_burn",
+		"stacks": 1
+	},
+	"burn_debuff_2": {
+		"type": "debuff",
+		"debuff_type": "burn",
+		"stacks": 2,
+		"damage_per_second": 5.0,
+		"duration": 3.0
+	},
+	"duration_increase_10s": {
+		"type": "stat_modifier",
+		"stat": "effect_duration",
+		"operation": "add",
+		"value": 10.0
+	},
+	"interrupt_cast": {
+		"type": "special",
+		"effect_type": "interrupt"
+	},
+	"imprison_chance_25_0.5s": {
+		"type": "special",
+		"effect_type": "chance_imprison",
+		"chance": 0.25,
+		"duration": 0.5
+	},
+	"duration_infinite": {
+		"type": "special",
+		"effect_type": "infinite_duration"
+	},
+	"knockback_enemies": {
+		"type": "special",
+		"effect_type": "knockback"
+	},
+	"carbonization_chance_70_0.75s": {
+		"type": "special",
+		"effect_type": "chance_carbonization",
+		"chance": 0.70,
+		"duration": 0.75
+	},
+	"chain_damage_multiplier": {
+		"type": "special",
+		"effect_type": "chain_multiplier"
+	},
+	"fire_field_4s": {
+		"type": "special",
+		"effect_type": "fire_field",
+		"duration": 4.0
+	},
+	"death_explosion": {
+		"type": "special",
+		"effect_type": "explosion_on_death"
+	},
+	"carbonization_field_2.5s": {
+		"type": "special",
+		"effect_type": "carbonization_field",
+		"trigger_time": 2.5,
+		"duration": 1.5
 	}
 }
 
@@ -969,6 +1384,202 @@ const summon_stones := {
 		"element": "light",
 		"range": 200.0,
 		"icon": "res://Assets/summon_stones/zeus.png"
+	}
+}
+
+# Tower Tech Tree Configuration - Individual tower progression
+const tower_tech_tree := {
+	"arrow_tower": {
+		"name": "箭塔科技",
+		"1": {
+			"name": "基础箭塔",
+			"description": "标准弓箭手塔",
+			"cost": 0,
+			"unlocked": true,
+			"gem_slot_level": 1
+		},
+		"2a": {
+			"name": "精准射手",
+			"description": "提高命中率和射程",
+			"cost": 3,
+			"unlocked": false,
+			"parent": "1",
+			"gem_slot_level": 2,
+			"bonuses": {"attack_range": 0.3, "da_bonus": 0.1}
+		},
+		"2b": {
+			"name": "连射弓手",
+			"description": "提高攻击速度和多重攻击",
+			"cost": 3,
+			"unlocked": false,
+			"parent": "1",
+			"gem_slot_level": 2,
+			"bonuses": {"attack_speed": 0.4, "ta_bonus": 0.05}
+		},
+		"3a": {
+			"name": "神射手",
+			"description": "极致精准，必定暴击",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2a",
+			"gem_slot_level": 3,
+			"bonuses": {"attack_range": 0.5, "da_bonus": 0.2, "damage": 0.3}
+		},
+		"3b": {
+			"name": "穿透射手",
+			"description": "箭矢可穿透多个敌人",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2a",
+			"gem_slot_level": 3,
+			"bonuses": {"pierce": 2, "damage": 0.2}
+		},
+		"3c": {
+			"name": "暴雨射手",
+			"description": "极快攻速，连射不断",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2b",
+			"gem_slot_level": 3,
+			"bonuses": {"attack_speed": 0.8, "ta_bonus": 0.1}
+		},
+		"3d": {
+			"name": "多重射手",
+			"description": "每次攻击发射多支箭",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2b",
+			"gem_slot_level": 3,
+			"bonuses": {"multi_shot": 3, "damage": 0.15}
+		}
+	},
+	"capture_tower": {
+		"name": "捕获塔科技",
+		"1": {
+			"name": "基础捕获塔",
+			"description": "标准减速塔",
+			"cost": 0,
+			"unlocked": true,
+			"gem_slot_level": 1
+		},
+		"2a": {
+			"name": "冰霜陷阱",
+			"description": "冰冻效果，范围伤害",
+			"cost": 3,
+			"unlocked": false,
+			"parent": "1",
+			"gem_slot_level": 2,
+			"bonuses": {"aoe_range": 50.0, "slow_strength": 0.3}
+		},
+		"2b": {
+			"name": "蛛网陷阱",
+			"description": "强力减速，持续时间长",
+			"cost": 3,
+			"unlocked": false,
+			"parent": "1",
+			"gem_slot_level": 2,
+			"bonuses": {"slow_duration": 0.8, "damage": 0.2}
+		},
+		"3a": {
+			"name": "急冻领域",
+			"description": "大范围冰冻，冰系伤害",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2a",
+			"gem_slot_level": 3,
+			"bonuses": {"aoe_range": 80.0, "freeze_chance": 0.3, "element": "ice"}
+		},
+		"3b": {
+			"name": "寒冰风暴",
+			"description": "冰暴攻击，群体减速",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2a",
+			"gem_slot_level": 3,
+			"bonuses": {"aoe_damage": 30.0, "attack_speed": 0.3}
+		},
+		"3c": {
+			"name": "剧毒蛛网",
+			"description": "毒性减速，持续伤害",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2b",
+			"gem_slot_level": 3,
+			"bonuses": {"dot_damage": 20.0, "slow_strength": 0.5}
+		},
+		"3d": {
+			"name": "束缚之网",
+			"description": "强力定身，防御削弱",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2b",
+			"gem_slot_level": 3,
+			"bonuses": {"immobilize": true, "armor_reduction": 0.4}
+		}
+	},
+	"mage_tower": {
+		"name": "法师塔科技",
+		"1": {
+			"name": "基础法师塔",
+			"description": "标准魔法塔",
+			"cost": 0,
+			"unlocked": true,
+			"gem_slot_level": 1
+		},
+		"2a": {
+			"name": "元素法师",
+			"description": "精通元素魔法",
+			"cost": 3,
+			"unlocked": false,
+			"parent": "1",
+			"gem_slot_level": 2,
+			"bonuses": {"elemental_damage": 0.4, "aoe_range": 20.0}
+		},
+		"2b": {
+			"name": "奥术法师",
+			"description": "纯粹魔法力量",
+			"cost": 3,
+			"unlocked": false,
+			"parent": "1",
+			"gem_slot_level": 2,
+			"bonuses": {"damage": 0.5, "mana_efficiency": 0.3}
+		},
+		"3a": {
+			"name": "风暴法师",
+			"description": "雷电风暴，链式伤害",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2a",
+			"gem_slot_level": 3,
+			"bonuses": {"chain_lightning": 3, "element": "wind"}
+		},
+		"3b": {
+			"name": "烈焰法师",
+			"description": "火焰爆炸，灼烧效果",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2a",
+			"gem_slot_level": 3,
+			"bonuses": {"explosion_damage": 80.0, "element": "fire", "burn_dot": 15.0}
+		},
+		"3c": {
+			"name": "秘法大师",
+			"description": "纯能量伤害，无视防御",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2b",
+			"gem_slot_level": 3,
+			"bonuses": {"damage": 0.8, "ignore_armor": true}
+		},
+		"3d": {
+			"name": "时空法师",
+			"description": "时间操控，减速敌人",
+			"cost": 5,
+			"unlocked": false,
+			"parent": "2b",
+			"gem_slot_level": 3,
+			"bonuses": {"time_slow": 0.4, "damage": 0.4, "area_effect": true}
+		}
 	}
 }
 
