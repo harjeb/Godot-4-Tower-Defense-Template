@@ -3,6 +3,10 @@ extends PathFollow2D
 # 新增属性
 var element: String = "neutral"
 var special_abilities: Array = []
+var defense: float = 0.0
+var monster_skills: Array = []
+var skill_cooldowns: Dictionary = {}
+var skill_timers: Dictionary = {}
 var is_stealthed: bool = false
 var can_split: bool = false
 var split_count: int = 0
@@ -19,7 +23,14 @@ var enemy_type := "":
 		$Sprite2D.texture = load(enemy_data["sprite"])
 		element = enemy_data.get("element", "neutral")
 		special_abilities = enemy_data.get("special_abilities", [])
+		monster_skills = enemy_data.get("monster_skills", [])
+		skill_cooldowns = enemy_data.get("skill_cooldowns", {})
 		max_hp = enemy_data["stats"]["hp"]
+		
+		# Initialize skill timers
+		for skill in monster_skills:
+			if skill in skill_cooldowns:
+				skill_timers[skill] = 0.0
 		
 		# 设置特殊能力
 		setup_special_abilities()
@@ -49,6 +60,9 @@ func _process(delta):
 			finished_path()
 			return
 			
+		# Monster skill processing
+		process_monster_skills(delta)
+		
 		# 治疗逻辑
 		if can_heal:
 			heal_timer -= delta
@@ -73,7 +87,10 @@ func finished_path():
 func get_damage(damage):
 	if is_destroyed:
 		return
-	hp -= damage
+	
+	# Apply defense system damage reduction
+	var final_damage = DefenseSystem.calculate_damage_after_defense(damage, defense)
+	hp -= final_damage
 	damage_animation()
 	if hp <= 0:
 		handle_death()
@@ -152,3 +169,40 @@ func has_ability(ability_name: String) -> bool:
 
 func get_element_color() -> Color:
 	return ElementSystem.get_element_color(element)
+
+# Monster skill processing
+func process_monster_skills(delta: float) -> void:
+	# Update skill timers and trigger skills when ready
+	for skill in monster_skills:
+		if skill in skill_timers:
+			skill_timers[skill] -= delta
+			
+			# Trigger skill if cooldown is ready
+			if skill_timers[skill] <= 0:
+				trigger_monster_skill(skill)
+				# Reset cooldown
+				if skill in skill_cooldowns:
+					skill_timers[skill] = skill_cooldowns[skill]
+
+func trigger_monster_skill(skill: String) -> void:
+	var monster_skill_system = get_monster_skill_system()
+	if not monster_skill_system:
+		return
+		
+	match skill:
+		"frost_aura":
+			monster_skill_system.trigger_frost_aura(self)
+		"acceleration":
+			monster_skill_system.trigger_acceleration(self)
+		"self_destruct":
+			# Only trigger if HP is below threshold
+			if hp / max_hp < 0.10:
+				monster_skill_system.trigger_self_destruct(self)
+		"petrification":
+			monster_skill_system.trigger_petrification(self)
+
+func get_monster_skill_system() -> MonsterSkillSystem:
+	var tree = get_tree()
+	if tree and tree.current_scene:
+		return tree.current_scene.get_node_or_null("MonsterSkillSystem")
+	return null

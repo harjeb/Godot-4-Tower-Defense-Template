@@ -50,8 +50,16 @@ func _on_wave_delay_timer_timeout():
 	killed_this_wave = 0
 	enemies_spawned_this_wave = 0
 	current_difficulty = get_current_difficulty()
-	current_wave_spawn_count = round(wave_spawn_count * current_difficulty)
-	spawnable_enemies = get_spawnable_enemies()
+	
+	# Check for special waves
+	if current_wave in special_waves:
+		var special_wave_data = special_waves[current_wave]
+		current_wave_spawn_count = special_wave_data.get("count", wave_spawn_count)
+		spawnable_enemies = [special_wave_data.get("enemy_type", "redDino")]
+	else:
+		current_wave_spawn_count = round(wave_spawn_count * current_difficulty)
+		spawnable_enemies = get_spawnable_enemies()
+	
 	Globals.waveStarted.emit(current_wave, current_wave_spawn_count)
 	$SpawnDelay.start()
 

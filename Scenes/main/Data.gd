@@ -99,10 +99,292 @@ var turrets := {
 		"gem_slot": null,
 		"turret_category": "melee",
 	},
+	"arrow_tower": {
+		"stats": {
+			"damage": 15,
+			"attack_speed": 1.2,
+			"attack_range": 80.0,
+			"bulletSpeed": 200.0,
+			"bulletPierce": 1,
+		},
+		"upgrades": {
+			"damage": {"amount": 3.0, "multiplies": false},
+			"attack_speed": {"amount": 1.3, "multiplies": true},
+		},
+		"name": "Arrow Tower",
+		"cost": 50,
+		"upgrade_cost": 40,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/projectileTurret/projectileTurret.tscn",
+		"sprite": "res://Assets/turrets/technoturret.png",
+		"scale": 3.0,
+		"rotates": true,
+		"bullet": "fire",
+		"element": "neutral",
+		"gem_slot": null,
+		"turret_category": "projectile",
+		"da_bonus": 0.05,
+		"ta_bonus": 0.01,
+		"passive_effect": "capture_tower_synergy",
+		"aoe_type": "none",
+		"special_mechanics": []
+	},
+	"capture_tower": {
+		"stats": {
+			"damage": 8,
+			"attack_speed": 0.5,
+			"attack_range": 100.0,
+			"bulletSpeed": 150.0,
+			"bulletPierce": 1,
+		},
+		"upgrades": {
+			"damage": {"amount": 2.0, "multiplies": false},
+			"attack_speed": {"amount": 1.2, "multiplies": true},
+		},
+		"name": "Capture Tower",
+		"cost": 75,
+		"upgrade_cost": 50,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/projectileTurret/projectileTurret.tscn",
+		"sprite": "res://Assets/turrets/laserturret.png",
+		"scale": 3.5,
+		"rotates": true,
+		"bullet": "laser",
+		"element": "neutral",
+		"gem_slot": null,
+		"turret_category": "projectile",
+		"da_bonus": 0.0,
+		"ta_bonus": 0.0,
+		"passive_effect": "attack_speed_aura",
+		"aoe_type": "slow",
+		"special_mechanics": ["slow_effect"]
+	},
+	"mage_tower": {
+		"stats": {
+			"damage": 45,
+			"attack_speed": 0.33,
+			"attack_range": 90.0,
+			"bulletSpeed": 100.0,
+			"bulletPierce": 5,
+		},
+		"upgrades": {
+			"damage": {"amount": 8.0, "multiplies": false},
+			"attack_speed": {"amount": 1.1, "multiplies": true},
+		},
+		"name": "Mage Tower",
+		"cost": 120,
+		"upgrade_cost": 80,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/projectileTurret/projectileTurret.tscn",
+		"sprite": "res://Assets/turrets/reallaser.png",
+		"scale": 4.0,
+		"rotates": true,
+		"bullet": "fire",
+		"element": "neutral",
+		"gem_slot": null,
+		"turret_category": "projectile",
+		"da_bonus": 0.0,
+		"ta_bonus": 0.0,
+		"passive_effect": "mage_damage_synergy",
+		"aoe_type": "circle",
+		"special_mechanics": ["aoe_damage"]
+	},
+	"detection_tower": {
+		"stats": {
+			"damage": 0,
+			"attack_speed": 0.0,
+			"attack_range": 120.0,
+			"bulletSpeed": 0.0,
+			"bulletPierce": 0,
+		},
+		"upgrades": {
+			"attack_range": {"amount": 20.0, "multiplies": false},
+		},
+		"name": "Detection Tower",
+		"cost": 60,
+		"upgrade_cost": 30,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/turretBase/turret_base.tscn",
+		"sprite": "res://Assets/turrets/dynamite.png",
+		"scale": 3.0,
+		"rotates": false,
+		"bullet": "none",
+		"element": "light",
+		"gem_slot": null,
+		"turret_category": "support",
+		"da_bonus": 0.0,
+		"ta_bonus": 0.0,
+		"passive_effect": "stealth_detection",
+		"aoe_type": "none",
+		"special_mechanics": ["stealth_detection"]
+	},
+	"doomsday_tower": {
+		"stats": {
+			"damage": 25,
+			"attack_speed": 0.05,
+			"attack_range": 70.0,
+			"bulletSpeed": 0.0,
+			"bulletPierce": 0,
+			"dot_damage": 25.0,
+			"dot_duration": 5.0,
+			"disable_duration": 2.0,
+		},
+		"upgrades": {
+			"damage": {"amount": 10.0, "multiplies": false},
+			"dot_damage": {"amount": 10.0, "multiplies": false},
+		},
+		"name": "Doomsday Tower",
+		"cost": 200,
+		"upgrade_cost": 120,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/turretBase/turret_base.tscn",
+		"sprite": "res://Assets/turrets/technoturret.png",
+		"scale": 5.0,
+		"rotates": false,
+		"bullet": "none",
+		"element": "dark",
+		"gem_slot": null,
+		"turret_category": "special",
+		"da_bonus": 0.0,
+		"ta_bonus": 0.0,
+		"passive_effect": "ta_cooldown_reduction",
+		"aoe_type": "circle",
+		"special_mechanics": ["dot_damage", "disable_effect"]
+	},
+	"pulse_tower": {
+		"stats": {
+			"damage": 20,
+			"attack_speed": 0.56,
+			"attack_range": 85.0,
+			"bulletSpeed": 0.0,
+			"bulletPierce": 0,
+			"pulse_interval": 3.0,
+		},
+		"upgrades": {
+			"damage": {"amount": 5.0, "multiplies": false},
+			"attack_speed": {"amount": 1.2, "multiplies": true},
+		},
+		"name": "Pulse Tower",
+		"cost": 90,
+		"upgrade_cost": 60,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/turretBase/turret_base.tscn",
+		"sprite": "res://Assets/turrets/laserturret.png",
+		"scale": 4.0,
+		"rotates": false,
+		"bullet": "none",
+		"element": "neutral",
+		"gem_slot": null,
+		"turret_category": "special",
+		"da_bonus": 0.0,
+		"ta_bonus": 0.0,
+		"passive_effect": "adjacent_tower_boost",
+		"aoe_type": "periodic_circle",
+		"special_mechanics": ["periodic_aoe"]
+	},
+	"ricochet_tower": {
+		"stats": {
+			"damage": 12,
+			"attack_speed": 0.67,
+			"attack_range": 75.0,
+			"bulletSpeed": 250.0,
+			"bulletPierce": 1,
+			"ricochet_count": 5,
+		},
+		"upgrades": {
+			"damage": {"amount": 3.0, "multiplies": false},
+			"ricochet_count": {"amount": 2, "multiplies": false},
+		},
+		"name": "Ricochet Tower",
+		"cost": 80,
+		"upgrade_cost": 50,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/projectileTurret/projectileTurret.tscn",
+		"sprite": "res://Assets/turrets/reallaser.png",
+		"scale": 3.5,
+		"rotates": true,
+		"bullet": "fire",
+		"element": "neutral",
+		"gem_slot": null,
+		"turret_category": "projectile",
+		"da_bonus": 0.0,
+		"ta_bonus": 0.0,
+		"passive_effect": "unique_damage_bonus",
+		"aoe_type": "bounce",
+		"special_mechanics": ["ricochet_shots"]
+	},
+	"aura_tower": {
+		"stats": {
+			"damage": 0,
+			"attack_speed": 0.0,
+			"attack_range": 95.0,
+			"bulletSpeed": 0.0,
+			"bulletPierce": 0,
+			"slow_strength": 0.3,
+		},
+		"upgrades": {
+			"attack_range": {"amount": 15.0, "multiplies": false},
+			"slow_strength": {"amount": 0.1, "multiplies": false},
+		},
+		"name": "Aura Tower",
+		"cost": 70,
+		"upgrade_cost": 40,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/turretBase/turret_base.tscn",
+		"sprite": "res://Assets/turrets/dynamite.png",
+		"scale": 4.0,
+		"rotates": false,
+		"bullet": "none",
+		"element": "ice",
+		"gem_slot": null,
+		"turret_category": "support",
+		"da_bonus": 0.0,
+		"ta_bonus": 0.0,
+		"passive_effect": "adjacent_da_ta_boost",
+		"aoe_type": "persistent_slow",
+		"special_mechanics": ["persistent_slow"]
+	},
+	"weakness_tower": {
+		"stats": {
+			"damage": 10,
+			"attack_speed": 1.25,
+			"attack_range": 65.0,
+			"bulletSpeed": 180.0,
+			"bulletPierce": 1,
+			"armor_reduction": 15,
+		},
+		"upgrades": {
+			"damage": {"amount": 2.5, "multiplies": false},
+			"armor_reduction": {"amount": 5, "multiplies": false},
+		},
+		"name": "Weakness Tower",
+		"cost": 65,
+		"upgrade_cost": 45,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/projectileTurret/projectileTurret.tscn",
+		"sprite": "res://Assets/turrets/technoturret.png",
+		"scale": 3.0,
+		"rotates": true,
+		"bullet": "laser",
+		"element": "dark",
+		"gem_slot": null,
+		"turret_category": "projectile",
+		"da_bonus": 0.0,
+		"ta_bonus": 0.0,
+		"passive_effect": "slowed_enemy_bonus",
+		"aoe_type": "armor_reduce",
+		"special_mechanics": ["armor_reduction"]
+	},
 }
 
 func _ready():
 	load_custom_turret_data()
+
+# Combat balance configuration
+const combat_settings := {
+	"da_max_chance": 0.5,  # Maximum Double Attack chance (50%)
+	"ta_max_chance": 0.25  # Maximum Triple Attack chance (25%)
+}
 
 func load_custom_turret_data():
 	# 检查是否存在自定义炮塔数据文件
@@ -159,6 +441,7 @@ const enemies := {
 	"redDino": {
 		"stats": {
 			"hp": 10.0,
+			"defense": 15,
 			"speed": 1.0,
 			"baseDamage": 5.0,
 			"goldYield": 10.0,
@@ -167,6 +450,8 @@ const enemies := {
 		"sprite": "res://Assets/enemies/dino1.png",
 		"element": "neutral",
 		"special_abilities": [],
+		"monster_skills": ["frost_aura"],
+		"skill_cooldowns": {"frost_aura": 8.0},
 		"drop_table": {
 			"base_chance": 0.05,
 			"items": ["fire_basic", "ice_basic", "earth_basic"]
@@ -175,6 +460,7 @@ const enemies := {
 	"blueDino": {
 		"stats": {
 			"hp": 5.0,
+			"defense": 10,
 			"speed": 2.0,
 			"baseDamage": 5.0,
 			"goldYield": 10.0,
@@ -183,6 +469,8 @@ const enemies := {
 		"sprite": "res://Assets/enemies/dino2.png",
 		"element": "ice",
 		"special_abilities": [],
+		"monster_skills": ["acceleration"],
+		"skill_cooldowns": {"acceleration": 5.0},
 		"drop_table": {
 			"base_chance": 0.06,
 			"items": ["ice_basic", "wind_basic"]
@@ -191,6 +479,7 @@ const enemies := {
 	"yellowDino": {
 		"stats": {
 			"hp": 10.0,
+			"defense": 20,
 			"speed": 5.0,
 			"baseDamage": 1.0,
 			"goldYield": 10.0,
@@ -199,6 +488,8 @@ const enemies := {
 		"sprite": "res://Assets/enemies/dino3.png",
 		"element": "wind",
 		"special_abilities": ["stealth"],
+		"monster_skills": ["self_destruct"],
+		"skill_cooldowns": {"self_destruct": 999.0},
 		"drop_table": {
 			"base_chance": 0.08,
 			"items": ["wind_basic", "light_basic"]
@@ -207,6 +498,7 @@ const enemies := {
 	"greenDino": {
 		"stats": {
 			"hp": 10.0,
+			"defense": 25,
 			"speed": 10.0,
 			"baseDamage": 1.0,
 			"goldYield": 10.0,
@@ -215,6 +507,8 @@ const enemies := {
 		"sprite": "res://Assets/enemies/dino4.png",
 		"element": "earth",
 		"special_abilities": ["split"],
+		"monster_skills": ["petrification"],
+		"skill_cooldowns": {"petrification": 7.0},
 		"drop_table": {
 			"base_chance": 0.07,
 			"items": ["earth_basic", "dark_basic"]
@@ -223,12 +517,15 @@ const enemies := {
 	"stealthDino": {
 		"stats": {
 			"hp": 15.0,
+			"defense": 30,
 			"speed": 1.5,
 			"baseDamage": 5.0,
 			"goldYield": 15.0,
 		},
 		"element": "neutral",
 		"special_abilities": ["stealth"],
+		"monster_skills": ["acceleration"],
+		"skill_cooldowns": {"acceleration": 5.0},
 		"drop_table": {
 			"base_chance": 0.08,
 			"items": ["wind_basic", "light_basic"]
@@ -239,12 +536,15 @@ const enemies := {
 	"healerDino": {
 		"stats": {
 			"hp": 20.0,
+			"defense": 40,
 			"speed": 0.8,
 			"baseDamage": 3.0,
 			"goldYield": 20.0,
 		},
 		"element": "light",
 		"special_abilities": ["heal"],
+		"monster_skills": ["frost_aura"],
+		"skill_cooldowns": {"frost_aura": 8.0},
 		"drop_table": {
 			"base_chance": 0.10,
 			"items": ["light_basic", "light_intermediate"]
@@ -483,5 +783,105 @@ const maps := {
 			"wave_spawn_count": 10,
 			"special_waves": {},
 			},
+	},
+	# Chapter 1 Maps
+	"chapter1_level1": {
+		"name": "Chapter 1 - Level 1",
+		"bg": "res://Assets/maps/map1.webp",
+		"scene": "res://Scenes/maps/map1.tscn",
+		"baseHp": 20,
+		"startingGold": 150,
+		"chapter": 1,
+		"level": 1,
+		"spawner_settings": {
+			"difficulty": {"initial": 1.0, "increase": 1.1, "multiplies": true},
+			"max_waves": 20,
+			"wave_spawn_count": 8,
+			"special_waves": {
+				10: {"enemy_type": "redDino", "count": 15},
+				20: {"enemy_type": "blueDino", "count": 5}
+			},
+		},
+	},
+	"chapter1_level2": {
+		"name": "Chapter 1 - Level 2", 
+		"bg": "res://Assets/maps/map2.png",
+		"scene": "res://Scenes/maps/map2.tscn",
+		"baseHp": 20,
+		"startingGold": 150,
+		"chapter": 1,
+		"level": 2,
+		"spawner_settings": {
+			"difficulty": {"initial": 1.2, "increase": 1.15, "multiplies": true},
+			"max_waves": 20,
+			"wave_spawn_count": 10,
+			"special_waves": {
+				5: {"enemy_type": "redDino", "count": 12},
+				15: {"enemy_type": "blueDino", "count": 8},
+				20: {"enemy_type": "yellowDino", "count": 3}
+			},
+		},
+	},
+	"chapter1_level3": {
+		"name": "Chapter 1 - Level 3",
+		"bg": "res://Assets/maps/map1.webp", 
+		"scene": "res://Scenes/maps/map1.tscn",
+		"baseHp": 25,
+		"startingGold": 200,
+		"chapter": 1,
+		"level": 3,
+		"spawner_settings": {
+			"difficulty": {"initial": 1.5, "increase": 1.2, "multiplies": true},
+			"max_waves": 30,
+			"wave_spawn_count": 12,
+			"special_waves": {
+				10: {"enemy_type": "redDino", "count": 20},
+				20: {"enemy_type": "blueDino", "count": 15},
+				25: {"enemy_type": "yellowDino", "count": 8},
+				30: {"enemy_type": "greenDino", "count": 5}
+			},
+		},
+	},
+	"chapter1_level4": {
+		"name": "Chapter 1 - Level 4",
+		"bg": "res://Assets/maps/map2.png",
+		"scene": "res://Scenes/maps/map2.tscn",
+		"baseHp": 30,
+		"startingGold": 250,
+		"chapter": 1,
+		"level": 4,
+		"spawner_settings": {
+			"difficulty": {"initial": 2.0, "increase": 1.25, "multiplies": true},
+			"max_waves": 30,
+			"wave_spawn_count": 15,
+			"special_waves": {
+				8: {"enemy_type": "stealthDino", "count": 10},
+				16: {"enemy_type": "yellowDino", "count": 12},
+				24: {"enemy_type": "greenDino", "count": 8},
+				30: {"enemy_type": "healerDino", "count": 5}
+			},
+		},
+	},
+	"chapter1_level5": {
+		"name": "Chapter 1 - Level 5 (Boss)",
+		"bg": "res://Assets/maps/map1.webp",
+		"scene": "res://Scenes/maps/map1.tscn",
+		"baseHp": 50,
+		"startingGold": 300,
+		"chapter": 1,
+		"level": 5,
+		"spawner_settings": {
+			"difficulty": {"initial": 2.5, "increase": 1.3, "multiplies": true},
+			"max_waves": 50,
+			"wave_spawn_count": 20,
+			"special_waves": {
+				10: {"enemy_type": "redDino", "count": 30},
+				20: {"enemy_type": "blueDino", "count": 25},
+				30: {"enemy_type": "stealthDino", "count": 15},
+				40: {"enemy_type": "greenDino", "count": 12},
+				45: {"enemy_type": "healerDino", "count": 8},
+				50: {"enemy_type": "healerDino", "count": 10}  # Final boss wave
+			},
+		},
 	}
 }

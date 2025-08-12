@@ -10,6 +10,19 @@ var element: String = "neutral"
 var equipped_gem: Dictionary = {}
 var turret_category: String = ""
 
+# DA/TA System Properties
+var da_bonus: float = 0.05  # 5% base DA chance
+var ta_bonus: float = 0.01  # 1% base TA chance
+var passive_effect: String = ""
+var aoe_type: String = "none"
+var special_mechanics: Array = []
+
+# Passive bonuses from other towers
+var passive_da_bonus: float = 0.0
+var passive_ta_bonus: float = 0.0
+var passive_damage_bonus: float = 0.0
+var passive_speed_bonus: float = 0.0
+
 var turret_type := "":
 	set(value):
 		turret_type = value
@@ -19,6 +32,11 @@ var turret_type := "":
 		rotates = turret_data["rotates"]
 		element = turret_data.get("element", "neutral")
 		turret_category = turret_data.get("turret_category", "")
+		da_bonus = turret_data.get("da_bonus", 0.05)
+		ta_bonus = turret_data.get("ta_bonus", 0.01)
+		passive_effect = turret_data.get("passive_effect", "")
+		aoe_type = turret_data.get("aoe_type", "none")
+		special_mechanics = turret_data.get("special_mechanics", [])
 		for stat in turret_data["stats"].keys():
 			set(stat, turret_data["stats"][stat])
 
@@ -59,6 +77,8 @@ func set_placeholder():
 func build():
 	deployed = true
 	modulate = Color.WHITE
+	# Apply passive bonuses when tower is built
+	call_deferred("apply_passive_bonuses")
 
 func colliding():
 	can_place = false
@@ -103,6 +123,9 @@ func try_get_closest_target():
 		current_target = closest_area.get_parent()
 
 func open_details_pane():
+	if not Globals or not Globals.hud:
+		return
+		
 	var turretDetailsScene := preload("res://Scenes/ui/turretUI/turret_details.tscn")
 	var details := turretDetailsScene.instantiate()
 	details.turret = self
@@ -114,12 +137,13 @@ func open_details_pane():
 func close_details_pane():
 	draw_range = false
 	queue_redraw()
-	Globals.hud.open_details_pane.queue_free()
-	Globals.hud.open_details_pane = null
+	if Globals and Globals.hud and is_instance_valid(Globals.hud.open_details_pane):
+		Globals.hud.open_details_pane.queue_free()
+		Globals.hud.open_details_pane = null
 
 func _on_collision_area_input_event(_viewport, _event, _shape_idx):
 	if deployed and Input.is_action_just_pressed("LeftClick"):
-		if is_instance_valid(Globals.hud.open_details_pane):
+		if Globals and Globals.hud and is_instance_valid(Globals.hud.open_details_pane):
 			if Globals.hud.open_details_pane.turret == self:
 				close_details_pane()
 				return
@@ -140,6 +164,64 @@ func attack():
 		pass
 	else:
 		try_get_closest_target()
+
+## Calculate number of attacks based on DA/TA probability
+## Returns 1 (normal), 2 (DA), or 3 (TA)
+func calculate_da_ta_attacks() -> int:
+	var total_da = da_bonus + passive_da_bonus
+	var total_ta = ta_bonus + passive_ta_bonus
+	
+	# Clamp values to reasonable bounds from Data configuration
+	total_da = clamp(total_da, 0.0, Data.combat_settings.da_max_chance)
+	total_ta = clamp(total_ta, 0.0, Data.combat_settings.ta_max_chance)
+	
+	var rand_val = randf()
+	
+	# Check TA first (less likely)
+	if rand_val < total_ta:
+		return 3
+	# Check DA
+	elif rand_val < total_da:
+		return 2
+	# Normal attack
+	else:
+		return 1
+
+## Apply passive bonuses from PassiveSynergyManager
+func apply_passive_bonuses() -> void:
+	if not deployed:
+		return
+		
+	# Reset passive bonuses
+	passive_da_bonus = 0.0
+	passive_ta_bonus = 0.0
+	passive_damage_bonus = 0.0
+	passive_speed_bonus = 0.0
+	
+	# Get synergy manager and calculate bonuses
+	var synergy_manager = get_passive_synergy_manager()
+	if synergy_manager:
+		var bonuses = synergy_manager.calculate_tower_bonuses(self)
+		passive_da_bonus = bonuses.get("da_bonus", 0.0)
+		passive_ta_bonus = bonuses.get("ta_bonus", 0.0)
+		passive_damage_bonus = bonuses.get("damage_bonus", 0.0)
+		passive_speed_bonus = bonuses.get("speed_bonus", 0.0)
+
+## Get effective stats with passive bonuses applied
+func get_effective_stats() -> Dictionary:
+	return {
+		"damage": damage * (1.0 + passive_damage_bonus),
+		"attack_speed": attack_speed * (1.0 + passive_speed_bonus),
+		"attack_range": attack_range,
+		"da_chance": da_bonus + passive_da_bonus,
+		"ta_chance": ta_bonus + passive_ta_bonus
+	}
+
+func get_passive_synergy_manager():
+	var tree = get_tree()
+	if tree and tree.current_scene:
+		return tree.current_scene.get_node_or_null("PassiveSynergyManager")
+	return null
 
 # 新增方法
 func equip_gem(gem_data: Dictionary):
@@ -184,8 +266,10 @@ func calculate_final_damage(base_damage: float, target_element: String) -> float
 
 func get_weapon_wheel_manager() -> WeaponWheelManager:
 	var tree = get_tree()
-	if tree and tree.root:
-		return tree.root.get_node_or_null("WeaponWheelManager") as WeaponWheelManager
+	if tree and tree.current_scene:
+		var manager = tree.current_scene.get_node_or_null("WeaponWheelManager")
+		if manager is WeaponWheelManager:
+			return manager as WeaponWheelManager
 	return null
 
 func get_element_color() -> Color:
