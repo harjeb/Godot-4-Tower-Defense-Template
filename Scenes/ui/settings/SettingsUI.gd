@@ -123,26 +123,28 @@ func create_stat_editors(container: VBoxContainer, turret_id: String, turret_dat
 	var cost_label = Label.new()
 	cost_label.text = "建造成本:"
 	cost_hbox.add_child(cost_label)
-	stat_spinbox.min = 0
-		stat_spinbox.max = 1000
-		stat_spinbox.step = 1
-		stat_spinbox.value = turret_data.cost
-		stat_spinbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		stat_spinbox.connect("value_changed", _on_stat_value_changed.bind(turret_id, "cost"))
-		cost_hbox.add_child(cost_spinbox)
+	var cost_spinbox = SpinBox.new()
+	cost_spinbox.min_value = 0.0
+	cost_spinbox.max_value = 1000.0
+	cost_spinbox.step = 1.0
+	cost_spinbox.value = turret_data.cost
+	cost_spinbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cost_spinbox.connect("value_changed", _on_stat_value_changed.bind(turret_id, "cost", ""))
+	cost_hbox.add_child(cost_spinbox)
 	stats_container.add_child(cost_hbox)
 	
 	var upgrade_cost_hbox = HBoxContainer.new()
 	var upgrade_cost_label = Label.new()
 	upgrade_cost_label.text = "升级成本:"
 	upgrade_cost_hbox.add_child(upgrade_cost_label)
-	upgrade_cost_spinbox.min = 0
-		upgrade_cost_spinbox.max = 1000
-		upgrade_cost_spinbox.step = 1
-		upgrade_cost_spinbox.value = turret_data.upgrade_cost
-		upgrade_cost_spinbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		upgrade_cost_spinbox.connect("value_changed", _on_stat_value_changed.bind(turret_id, "upgrade_cost"))
-		upgrade_cost_hbox.add_child(upgrade_cost_spinbox)
+	var upgrade_cost_spinbox = SpinBox.new()
+	upgrade_cost_spinbox.min_value = 0.0
+	upgrade_cost_spinbox.max_value = 1000.0
+	upgrade_cost_spinbox.step = 1.0
+	upgrade_cost_spinbox.value = turret_data.upgrade_cost
+	upgrade_cost_spinbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	upgrade_cost_spinbox.connect("value_changed", _on_stat_value_changed.bind(turret_id, "upgrade_cost", ""))
+	upgrade_cost_hbox.add_child(upgrade_cost_spinbox)
 	stats_container.add_child(upgrade_cost_hbox)
 	
 	var max_level_hbox = HBoxContainer.new()
@@ -150,12 +152,12 @@ func create_stat_editors(container: VBoxContainer, turret_id: String, turret_dat
 	max_level_label.text = "最高等级:"
 	max_level_hbox.add_child(max_level_label)
 	var max_level_spinbox = SpinBox.new()
-	max_level_spinbox.min = 1
-	max_level_spinbox.max = 10
-	max_level_spinbox.step = 1
+	max_level_spinbox.min_value = 1.0
+	max_level_spinbox.max_value = 10.0
+	max_level_spinbox.step = 1.0
 	max_level_spinbox.value = turret_data.max_level
 	max_level_spinbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	max_level_spinbox.connect("value_changed", _on_stat_value_changed.bind(turret_id, "max_level"))
+	max_level_spinbox.connect("value_changed", _on_stat_value_changed.bind(turret_id, "max_level", ""))
 	max_level_hbox.add_child(max_level_spinbox)
 	stats_container.add_child(max_level_hbox)
 	
@@ -165,12 +167,15 @@ func create_stat_editors(container: VBoxContainer, turret_id: String, turret_dat
 		var stat_hbox = HBoxContainer.new()
 		
 		var stat_label = Label.new()
-		stat_label.text = "%s:" % Data.stats.get(stat_name, {"name": stat_name}).name
+		var stat_data = {"name": stat_name}
+		if Data.stats.has(stat_name):
+			stat_data = Data.stats.get(stat_name)
+		stat_label.text = "%s:" % stat_data.name
 		stat_hbox.add_child(stat_label)
 		
 		var stat_spinbox = SpinBox.new()
-		stat_spinbox.min = 0
-		stat_spinbox.max = 10000
+		stat_spinbox.min_value = 0.0
+		stat_spinbox.max_value = 10000.0
 		stat_spinbox.step = 0.1
 		stat_spinbox.value = stat_value
 		stat_spinbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -190,12 +195,16 @@ func create_stat_editors(container: VBoxContainer, turret_id: String, turret_dat
 		var upgrade_hbox = HBoxContainer.new()
 		
 		var upgrade_label = Label.new()
-		upgrade_label.text = "%s:" % Data.stats.get(upgrade_name, {"name": upgrade_name}).name
+		var display_name = upgrade_name
+		if Data.stats.has(upgrade_name):
+			var stat_data = Data.stats.get(upgrade_name)
+			display_name = stat_data.name
+		upgrade_label.text = "%s:" % display_name
 		upgrade_hbox.add_child(upgrade_label)
 		
 		var amount_spinbox = SpinBox.new()
-		amount_spinbox.min = -100
-		amount_spinbox.max = 100
+		amount_spinbox.min_value = -100.0
+		amount_spinbox.max_value = 100.0
 		amount_spinbox.step = 0.1
 		amount_spinbox.value = upgrade_data.amount
 		amount_spinbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -214,13 +223,13 @@ func _input(event):
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("open_settings"):
 		close_settings()
 
-func _on_stat_value_changed(value, turret_id: String, category: String, stat_name: String = ""):
+func _on_stat_value_changed(turret_id: String, category: String, stat_name: String, value):
 	if category == "stats":
 		modified_turret_data[turret_id][category][stat_name] = value
 	else:
 		modified_turret_data[turret_id][category] = value
 
-func _on_upgrade_value_changed(value, turret_id: String, upgrade_name: String, property: String):
+func _on_upgrade_value_changed(turret_id: String, upgrade_name: String, property: String, value):
 	modified_turret_data[turret_id]["upgrades"][upgrade_name][property] = value
 
 func _on_close_button_pressed():

@@ -108,8 +108,9 @@ func _on_wave_cleared(wait_time: float):
 	wave_completed.emit(current_wave, tech_points_earned)
 	
 	# Check if this was the last wave
-	var current_map_data = Data.maps.get(Globals.selected_map, {})
-	var max_waves = current_map_data.get("spawner_settings", {}).get("max_waves", 10)
+	var current_map_data = Data.maps.get(Globals.selected_map) if Data.maps.has(Globals.selected_map) else {}
+	var spawner_settings = current_map_data.get("spawner_settings") if current_map_data.has("spawner_settings") else {}
+	var max_waves = spawner_settings.get("max_waves") if spawner_settings.has("max_waves") else 10
 	
 	if current_wave >= max_waves:
 		all_waves_completed.emit()

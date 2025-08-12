@@ -80,8 +80,8 @@ func get_stone_cooldown_ratio(slot: int) -> float:
 
 func apply_global_damage_boost(stone_data: Dictionary):
 	var all_towers = get_all_towers()
-	var duration = stone_data.get("duration", 15.0)
-	var multiplier = stone_data.get("damage_multiplier", 2.5)
+	var duration = stone_data.get("duration") if stone_data.has("duration") else 15.0
+	var multiplier = stone_data.get("damage_multiplier") if stone_data.has("damage_multiplier") else 2.5
 	
 	for tower in all_towers:
 		if is_instance_valid(tower):
@@ -93,9 +93,9 @@ func apply_global_damage_boost(stone_data: Dictionary):
 				tower.damage = original_damage
 
 func apply_targeted_damage(stone_data: Dictionary, position: Vector2):
-	var damage = stone_data.get("damage", 2000)
-	var range_val = stone_data.get("range", 150.0)
-	var element = stone_data.get("element", "light")
+	var damage = stone_data.get("damage") if stone_data.has("damage") else 2000
+	var range_val = stone_data.get("range") if stone_data.has("range") else 150.0
+	var element = stone_data.get("element") if stone_data.has("element") else "light"
 	
 	var enemies = get_enemies_in_range(position, range_val)
 	for enemy in enemies:
@@ -103,9 +103,9 @@ func apply_targeted_damage(stone_data: Dictionary, position: Vector2):
 			enemy.get_damage(damage)
 
 func apply_freeze_damage(stone_data: Dictionary, position: Vector2):
-	var damage = stone_data.get("damage", 1200)
-	var range_val = stone_data.get("range", 180.0)
-	var freeze_duration = stone_data.get("freeze_duration", 2.0)
+	var damage = stone_data.get("damage") if stone_data.has("damage") else 1200
+	var range_val = stone_data.get("range") if stone_data.has("range") else 180.0
+	var freeze_duration = stone_data.get("freeze_duration") if stone_data.has("freeze_duration") else 2.0
 	
 	var enemies = get_enemies_in_range(position, range_val)
 	for enemy in enemies:
@@ -114,9 +114,9 @@ func apply_freeze_damage(stone_data: Dictionary, position: Vector2):
 			apply_freeze_effect(enemy, freeze_duration)
 
 func apply_charge_and_damage(stone_data: Dictionary):
-	var charge_bonus = stone_data.get("charge_bonus", 30)
-	var damage_bonus = stone_data.get("damage_bonus", 0.30)
-	var duration = stone_data.get("duration", 5.0)
+	var charge_bonus = stone_data.get("charge_bonus") if stone_data.has("charge_bonus") else 30
+	var damage_bonus = stone_data.get("damage_bonus") if stone_data.has("damage_bonus") else 0.30
+	var duration = stone_data.get("duration") if stone_data.has("duration") else 5.0
 	
 	var all_towers = get_all_towers()
 	var charge_system = get_charge_system()
@@ -132,8 +132,8 @@ func apply_charge_and_damage(stone_data: Dictionary):
 				tower.damage = original_damage
 
 func apply_dispel_damage(stone_data: Dictionary, position: Vector2):
-	var damage = stone_data.get("damage", 1500)
-	var range_val = stone_data.get("range", 200.0)
+	var damage = stone_data.get("damage") if stone_data.has("damage") else 1500
+	var range_val = stone_data.get("range") if stone_data.has("range") else 200.0
 	
 	var enemies = get_enemies_in_range(position, range_val)
 	for enemy in enemies:
@@ -141,8 +141,8 @@ func apply_dispel_damage(stone_data: Dictionary, position: Vector2):
 			dispel_enemy_buffs(enemy)
 			enemy.get_damage(damage)
 
-func get_all_towers() -> Array[Turret]:
-	var towers: Array[Turret] = []
+func get_all_towers() -> Array:
+	var towers: Array = []
 	var turret_nodes = get_tree().get_nodes_in_group("turret")
 	for turret in turret_nodes:
 		if turret is Turret and turret.deployed:

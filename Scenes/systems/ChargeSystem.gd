@@ -1,8 +1,8 @@
 class_name ChargeSystem
 extends Node
 
-signal charge_ability_triggered(tower: Turret, ability_name: String)
-signal charge_updated(tower: Turret, current_charge: int)
+signal charge_ability_triggered(tower: Node2D, ability_name: String)
+signal charge_updated(tower: Node2D, current_charge: int)
 
 var tower_charges: Dictionary = {}
 var max_charge: int = 100
@@ -30,16 +30,16 @@ func setup_passive_charge_timer():
 	add_child(passive_charge_timer)
 	passive_charge_timer.start()
 
-func initialize_tower_charge(tower: Turret):
+func initialize_tower_charge(tower: Node2D):
 	if not tower or not tower.deployed:
 		return
 	tower_charges[tower.get_instance_id()] = 0
 
-func add_charge_on_hit(tower: Turret):
+func add_charge_on_hit(tower: Node2D):
 	# 命中敌人时调用，增加2点充能
 	add_charge(tower, charge_per_hit)
 
-func add_charge(tower: Turret, amount: int):
+func add_charge(tower: Node2D, amount: int):
 	if not tower or not tower.deployed:
 		return
 	
@@ -64,18 +64,18 @@ func _on_passive_charge_timeout():
 		if tower and tower.deployed and has_charge_ability(tower.turret_type):
 			add_charge(tower, charge_per_second)
 
-func trigger_charge_ability(tower: Turret):
+func trigger_charge_ability(tower: Node2D):
 	if not tower or not has_charge_ability(tower.turret_type):
 		return
 	
 	var tower_id = tower.get_instance_id()
 	tower_charges[tower_id] = 0
 	
-	var ability_data = Data.charge_system.charge_abilities.get(tower.turret_type, {})
+	var ability_data = Data.charge_system.charge_abilities.get(tower.turret_type) if Data.charge_system.charge_abilities.has(tower.turret_type) else {}
 	execute_charge_ability(tower, ability_data)
-	charge_ability_triggered.emit(tower, ability_data.get("name", "Unknown"))
+	charge_ability_triggered.emit(tower, ability_data.get("name") if ability_data.has("name") else "Unknown")
 
-func execute_charge_ability(tower: Turret, ability_data: Dictionary):
+func execute_charge_ability(tower: Node2D, ability_data: Dictionary):
 	match tower.turret_type:
 		"arrow_tower":
 			execute_arrow_rain(tower, ability_data)
@@ -87,31 +87,34 @@ func execute_charge_ability(tower: Turret, ability_data: Dictionary):
 func has_charge_ability(tower_type: String) -> bool:
 	return Data.charge_system.charge_abilities.has(tower_type)
 
-func get_tower_charge(tower: Turret) -> int:
+func get_tower_charge(tower: Node2D) -> int:
 	if not tower:
 		return 0
-	return tower_charges.get(tower.get_instance_id(), 0)
+	var tower_id = tower.get_instance_id()
+	if tower_charges.has(tower_id):
+		return tower_charges.get(tower_id)
+	return 0
 
-func execute_arrow_rain(tower: Turret, ability_data: Dictionary):
+func execute_arrow_rain(tower: Node2D, ability_data: Dictionary):
 	# Create multiple projectiles in target area
 	var target_pos = tower.current_target.position if tower.current_target else tower.position
-	var arrow_count = ability_data.get("arrow_count", 15)
-	var damage_multiplier = ability_data.get("damage_multiplier", 0.8)
+	var arrow_count = ability_data.get("arrow_count") if ability_data.has("arrow_count") else 15
+	var damage_multiplier = ability_data.get("damage_multiplier") if ability_data.has("damage_multiplier") else 0.8
 	
 	for i in range(arrow_count):
 		var offset = Vector2(randf_range(-60, 60), randf_range(-60, 60))
 		create_charge_projectile(tower, target_pos + offset, damage_multiplier)
 
-func execute_thorn_net(tower: Turret, ability_data: Dictionary):
+func execute_thorn_net(tower: Node2D, ability_data: Dictionary):
 	# Enhance capture tower's next few attacks
-	var enhanced_range = tower.attack_range * ability_data.get("range_multiplier", 2.0)
-	var armor_reduction = ability_data.get("armor_reduction", 0.15)
+	var enhanced_range = tower.attack_range * (ability_data.get("range_multiplier") if ability_data.has("range_multiplier") else 2.0)
+	var armor_reduction = ability_data.get("armor_reduction") if ability_data.has("armor_reduction") else 0.15
 	tower.set("enhanced_capture", {"range": enhanced_range, "armor_reduction": armor_reduction, "duration": 5.0})
 
-func execute_activation(tower: Turret, ability_data: Dictionary):
+func execute_activation(tower: Node2D, ability_data: Dictionary):
 	# Boost mage tower attack speed temporarily
-	var speed_bonus = ability_data.get("speed_bonus", 0.30)
-	var duration = ability_data.get("duration", 3.0)
+	var speed_bonus = ability_data.get("speed_bonus") if ability_data.has("speed_bonus") else 0.30
+	var duration = ability_data.get("duration") if ability_data.has("duration") else 3.0
 	var original_speed = tower.attack_speed
 	tower.attack_speed *= (1.0 + speed_bonus)
 	
@@ -120,7 +123,7 @@ func execute_activation(tower: Turret, ability_data: Dictionary):
 	if is_instance_valid(tower):
 		tower.attack_speed = original_speed
 
-func create_charge_projectile(tower: Turret, target_pos: Vector2, damage_multiplier: float):
+func create_charge_projectile(tower: Node2D, target_pos: Vector2, damage_multiplier: float):
 	var projectileScene := preload("res://Scenes/turrets/projectileTurret/bullet/bulletBase.tscn")
 	var projectile := projectileScene.instantiate()
 	projectile.bullet_type = "fire"
@@ -137,10 +140,10 @@ func create_charge_projectile(tower: Turret, target_pos: Vector2, damage_multipl
 	projectile.position = tower.position
 	projectile.target = target_pos
 
-func _on_tower_placed(tower: Turret):
+func _on_tower_placed(tower: Node2D):
 	initialize_tower_charge(tower)
 
-func _on_tower_removed(tower: Turret):
+func _on_tower_removed(tower: Node2D):
 	if tower:
 		tower_charges.erase(tower.get_instance_id())
 

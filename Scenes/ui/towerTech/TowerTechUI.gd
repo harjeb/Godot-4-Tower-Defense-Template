@@ -115,7 +115,9 @@ func update_tech_tree_display():
 	create_tech_nodes(container, current_tower_type)
 
 func create_tech_nodes(parent: Control, tower_type: String):
-	var tower_data = Data.tower_tech_tree.get(tower_type, {})
+	var tower_data = {}
+	if Data.tower_tech_tree.has(tower_type):
+		tower_data = Data.tower_tech_tree.get(tower_type)
 	
 	# Level 1 (base) - center top
 	create_tech_node(parent, tower_type, "1", Vector2(400, 50))
@@ -134,7 +136,9 @@ func create_tech_nodes(parent: Control, tower_type: String):
 	create_connection_lines(parent, tower_type)
 
 func create_tech_node(parent: Control, tower_type: String, tech_id: String, pos: Vector2):
-	var tech_data = Data.tower_tech_tree[tower_type].get(tech_id, {})
+	var tech_data = {}
+	if Data.tower_tech_tree[tower_type].has(tech_id):
+		tech_data = Data.tower_tech_tree[tower_type].get(tech_id)
 	if tech_data.is_empty():
 		return
 	

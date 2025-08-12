@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c8qlqm6qxbfv4"
-path="res://.godot/imported/shiva.png-47d8b58bb8e6c8f8d8a8b8e3f3b8e8f8.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://Assets/summon_stones/shiva.png"
-dest_files=["res://.godot/imported/shiva.png-47d8b58bb8e6c8f8d8a8b8e3f3b8e8f8.ctex"]
 
 [params]
 

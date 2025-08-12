@@ -20,8 +20,9 @@ func _process(delta):
 	if burn_stacks > 0 and burn_damage_per_second > 0:
 		# 每秒造成灼烧伤害
 		if fmod(Time.get_ticks_msec() / 1000.0, 1.0) < delta:
-			if has_method("take_damage"):
-				take_damage(burn_damage_per_second * burn_stacks)
+			var parent = get_parent()
+			if parent and parent.has_method("take_damage"):
+				parent.take_damage(burn_damage_per_second * burn_stacks)
 
 # 应用灼烧效果
 func apply_burn(stacks: int, damage_per_second: float):

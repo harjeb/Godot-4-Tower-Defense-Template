@@ -5,7 +5,24 @@
       "Bash(find:*)",
       "Bash(touch:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(godot:*)",
+      "Bash(rm:*)",
+      "Bash(rg:*)",
+      "Bash(mv:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(echo:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"Fixing $file\")",
+      "Bash(done)",
+      "Bash(do echo -n \"$file: \")",
+      "Bash(cp:*)",
+      "Bash(-exec head -n 500 {})",
+      "Bash(claude mcp)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": []
   }

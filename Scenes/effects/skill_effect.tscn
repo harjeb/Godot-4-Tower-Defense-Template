@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3 uid="uid://bq2lqsj6r5nkf"]
+
+[ext_resource type="Script" path="res://Scenes/effects/skill_effect.gd" id="1_0w6xm"]
+
+[node name="SkillEffect" type="Node2D"]
+script = ExtResource("1_0w6xm")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[node name="EffectSprite" type="Sprite2D" parent="."]
+scale = Vector2(0.5, 0.5)
+
+[node name="EffectLabel" type="Label" parent="."]
+offset_left = -50.0
+offset_top = -30.0
+offset_right = 50.0
+offset_bottom = -10.0
+horizontal_alignment = 1

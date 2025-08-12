@@ -388,7 +388,9 @@ func simulate_level_playthrough(chapter: int, level: int) -> Dictionary:
 
 func simulate_enemy_breakthrough(enemy_group: Dictionary, level: int) -> int:
 	# Simulate how many enemies get through based on level difficulty
-	var enemy_count = enemy_group.get("count", 1)
+	var enemy_count = 1
+	if enemy_group.has("count"):
+		enemy_count = enemy_group.get("count")
 	var breakthrough_rate = 0.0
 	
 	# Adjust breakthrough rate based on level

@@ -2,16 +2,12 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d3o4p5k6l7m8n9o0"
-path="res://.godot/imported/europa.png-69f8d7aee0g8f0g0g0c0d0g5h5d0g0h0.ctex"
-metadata={
-"vram_texture": false
-}
+uid="uid://ctswlhh2tqx7j"
+valid=false
 
 [deps]
 
 source_file="res://Assets/summon_stones/europa.png"
-dest_files=["res://.godot/imported/europa.png-69f8d7aee0g8f0g0g0c0d0g5h5d0g0h0.ctex"]
 
 [params]
 

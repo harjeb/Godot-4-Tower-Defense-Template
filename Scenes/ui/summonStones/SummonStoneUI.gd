@@ -24,7 +24,7 @@ func setup_ui():
 	for i in range(3):
 		var slot_panel = Panel.new()
 		slot_panel.custom_minimum_size = Vector2(64, 64)
-		slot_panel.add_theme_style_override("panel", create_slot_style())
+		slot_panel.add_theme_stylebox_override("panel", create_slot_style())
 		hbox.add_child(slot_panel)
 		slot_containers.append(slot_panel)
 		
@@ -96,15 +96,18 @@ func _on_stone_equipped(slot: int, stone_id: String):
 		
 		if stone_id != "" and Data.summon_stones.has(stone_id):
 			var stone_data = Data.summon_stones[stone_id]
-			var icon_path = stone_data.get("icon", "")
+			var icon_path = stone_data.get("icon") if stone_data.has("icon") else ""
 			if icon_path != "" and ResourceLoader.exists(icon_path):
 				icon_rect.texture = load(icon_path)
 			
 			# Update tooltip
+			var name_text = stone_data.get("name") if stone_data.has("name") else "Unknown"
+			var desc_text = stone_data.get("description") if stone_data.has("description") else ""
+			var cooldown_text = stone_data.get("cooldown") if stone_data.has("cooldown") else 0
 			slot_panel.tooltip_text = "%s\n%s\nCD: %.0fs" % [
-				stone_data.get("name", "Unknown"),
-				stone_data.get("description", ""),
-				stone_data.get("cooldown", 0)
+				name_text,
+				desc_text,
+				cooldown_text
 			]
 		else:
 			icon_rect.texture = null

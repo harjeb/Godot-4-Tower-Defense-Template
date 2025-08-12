@@ -19,16 +19,23 @@ func apply_effect(target: Node, effect_name: String, effect_data: Dictionary, so
 	if not active_effects.has(target_id):
 		active_effects[target_id] = []
 	
+	var stacks = 1
+	if effect_data.has("stacks"):
+		stacks = effect_data.get("stacks")
+	
 	var effect = {
 		"name": effect_name,
 		"data": effect_data,
 		"start_time": Time.get_ticks_msec(),
 		"source": source,
-		"stacks": effect_data.get("stacks", 1)
+		"stacks": stacks
 	}
 	
 	# 处理可叠加效果
-	if effect_data.get("debuff_type") == "burn":
+	var debuff_type = ""
+	if effect_data.has("debuff_type"):
+		debuff_type = effect_data.get("debuff_type")
+	if debuff_type == "burn":
 		_handle_burn_stacking(target, effect)
 	else:
 		active_effects[target_id].append(effect)
@@ -49,7 +56,10 @@ func _handle_burn_stacking(target: Node, new_effect: Dictionary):
 	# 查找现存的灼烧效果
 	var existing_burn = null
 	for effect in active_effects[target_id]:
-		if effect.data.get("debuff_type") == "burn":
+		var effect_debuff_type = ""
+		if effect.data.has("debuff_type"):
+			effect_debuff_type = effect.data.get("debuff_type")
+		if effect_debuff_type == "burn":
 			existing_burn = effect
 			break
 	
@@ -78,7 +88,7 @@ func _apply_single_effect(target: Node, effect: Dictionary):
 			_apply_damage_modifier(target, effect)
 
 func _apply_debuff(target: Node, effect: Dictionary):
-	var debuff_type = effect.data.get("debuff_type")
+	var debuff_type = effect.data.get("debuff_type") if effect.data.has("debuff_type") else ""
 	
 	match debuff_type:
 		"burn":
@@ -92,7 +102,7 @@ func _apply_debuff(target: Node, effect: Dictionary):
 				target.apply_imprison()
 		"脆弱":
 			if target.has_method("apply_vulnerability"):
-				target.apply_vulnerability(effect.data.get("damage_increase", 0.25))
+				target.apply_vulnerability(effect.data.get("damage_increase") if effect.data.has("damage_increase") else 0.25)
 
 func _apply_stat_modifier(target: Node, effect: Dictionary):
 	var stat = effect.data.get("stat")
@@ -118,7 +128,7 @@ func _apply_damage_modifier(target: Node, effect: Dictionary):
 
 func _setup_effect_timer(target: Node, effect: Dictionary):
 	var target_id = target.get_instance_id()
-	var duration = effect.data.get("duration", 0.0)
+	var duration = effect.data.get("duration") if effect.data.has("duration") else 0.0
 	
 	if duration <= 0:
 		return
@@ -188,7 +198,7 @@ func _remove_single_effect(target: Node, effect: Dictionary):
 			_remove_damage_modifier(target, effect)
 
 func _remove_debuff(target: Node, effect: Dictionary):
-	var debuff_type = effect.data.get("debuff_type")
+	var debuff_type = effect.data.get("debuff_type") if effect.data.has("debuff_type") else ""
 	
 	match debuff_type:
 		"burn":
@@ -266,7 +276,7 @@ func get_target_effects(target: Node) -> Array:
 		return []
 	
 	var target_id = target.get_instance_id()
-	return active_effects.get(target_id, [])
+	return active_effects.get(target_id) if active_effects.has(target_id) else []
 
 func has_effect(target: Node, effect_name: String) -> bool:
 	var effects = get_target_effects(target)

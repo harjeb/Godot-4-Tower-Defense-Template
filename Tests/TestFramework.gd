@@ -117,11 +117,11 @@ func run_test(test_name: String, test_func: Callable) -> bool:
 	var success = true
 	var error_message = ""
 	
-	try:
-		test_func.call()
-	except:
+	# Execute test function with error handling
+	var result = test_func.call()
+	if result == false:
 		success = false
-		error_message = "Test threw an exception"
+		error_message = "Test function returned false"
 		_log_fail(error_message)
 	
 	var end_time = Time.get_time_dict_from_system()

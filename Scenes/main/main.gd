@@ -1,5 +1,17 @@
 extends Node2D
 
+# Preload system scripts to ensure they're available
+const TowerTechSystem = preload("res://Scenes/systems/TowerTechSystem.gd")
+const InventoryManager = preload("res://Scenes/systems/InventoryManager.gd")
+const WeaponWheelManager = preload("res://Scenes/systems/WeaponWheelManager.gd")
+const PassiveSynergyManager = preload("res://Scenes/systems/PassiveSynergyManager.gd")
+const MonsterSkillSystem = preload("res://Scenes/systems/MonsterSkillSystem.gd")
+const ChargeSystem = preload("res://Scenes/systems/ChargeSystem.gd")
+const SummonStoneSystem = preload("res://Scenes/systems/SummonStoneSystem.gd")
+const TechPointSystem = preload("res://Scenes/systems/TechPointSystem.gd")
+const WaveManager = preload("res://Scenes/systems/WaveManager.gd")
+const EffectManager = preload("res://Scenes/systems/EffectManager.gd")
+
 func _ready():
 	Globals.mainNode = self
 	

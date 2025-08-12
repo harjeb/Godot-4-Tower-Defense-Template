@@ -54,8 +54,15 @@ func _on_wave_delay_timer_timeout():
 	# Check for special waves
 	if current_wave in special_waves:
 		var special_wave_data = special_waves[current_wave]
-		current_wave_spawn_count = special_wave_data.get("count", wave_spawn_count)
-		spawnable_enemies = [special_wave_data.get("enemy_type", "redDino")]
+		if special_wave_data.has("count"):
+			current_wave_spawn_count = special_wave_data.get("count")
+		else:
+			current_wave_spawn_count = wave_spawn_count
+		
+		var enemy_type = "redDino"
+		if special_wave_data.has("enemy_type"):
+			enemy_type = special_wave_data.get("enemy_type")
+		spawnable_enemies = [enemy_type]
 	else:
 		current_wave_spawn_count = round(wave_spawn_count * current_difficulty)
 		spawnable_enemies = get_spawnable_enemies()

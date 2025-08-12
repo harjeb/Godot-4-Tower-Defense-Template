@@ -29,10 +29,15 @@ func can_upgrade_talent(talent_id: String) -> bool:
 		return false
 	
 	var talent_data = Data.tech_tree[talent_id]
-	var current_level = talent_levels.get(talent_id, 0)
+	var current_level = 0
+	if talent_levels.has(talent_id):
+		current_level = talent_levels.get(talent_id)
 	
 	# Check max level
-	if current_level >= talent_data.get("max_level", 1):
+	var max_level = 1
+	if talent_data.has("max_level"):
+		max_level = talent_data.get("max_level")
+	if current_level >= max_level:
 		return false
 	
 	# Check cost
@@ -40,8 +45,14 @@ func can_upgrade_talent(talent_id: String) -> bool:
 		return false
 	
 	# Check requirements
-	for requirement in talent_data.get("requirements", []):
-		if talent_levels.get(requirement, 0) == 0:
+	var requirements = []
+	if talent_data.has("requirements"):
+		requirements = talent_data.get("requirements")
+	for requirement in requirements:
+		var req_level = 0
+		if talent_levels.has(requirement):
+			req_level = talent_levels.get(requirement)
+		if req_level == 0:
 			return false
 	
 	return true
@@ -57,7 +68,7 @@ func upgrade_talent(talent_id: String) -> bool:
 	current_tech_points -= talent_data.cost
 	
 	# Increase level
-	var old_level = talent_levels.get(talent_id, 0)
+	var old_level = talent_levels.get(talent_id) if talent_levels.has(talent_id) else 0
 	talent_levels[talent_id] = old_level + 1
 	
 	# Apply effect
@@ -72,7 +83,7 @@ func upgrade_talent(talent_id: String) -> bool:
 
 ## Apply talent effects to the game systems
 func apply_talent_effect(talent_id: String):
-	var level = talent_levels.get(talent_id, 0)
+	var level = talent_levels.get(talent_id) if talent_levels.has(talent_id) else 0
 	if level == 0:
 		return
 	
@@ -104,7 +115,7 @@ func apply_all_talent_effects():
 
 ## Get talent level
 func get_talent_level(talent_id: String) -> int:
-	return talent_levels.get(talent_id, 0)
+	return talent_levels.get(talent_id) if talent_levels.has(talent_id) else 0
 
 ## Get current tech points
 func get_tech_points() -> int:
@@ -172,8 +183,8 @@ func apply_projectile_speed_boost(multiplier: float):
 	talent_effect_applied.emit("projectile_speed_boost", multiplier)
 
 ## Helper function to get all towers
-func get_all_towers() -> Array[Turret]:
-	var towers: Array[Turret] = []
+func get_all_towers() -> Array:
+	var towers: Array = []
 	var turret_nodes = get_tree().get_nodes_in_group("turret")
 	for turret in turret_nodes:
 		if turret is Turret and turret.deployed:
@@ -200,8 +211,8 @@ func load_tech_points():
 			var json = JSON.new()
 			if json.parse(json_string) == OK:
 				var save_data = json.data
-				current_tech_points = save_data.get("tech_points", 0)
-				talent_levels = save_data.get("talent_levels", {})
+				current_tech_points = save_data.get("tech_points") if save_data.has("tech_points") else 0
+				talent_levels = save_data.get("talent_levels") if save_data.has("talent_levels") else {}
 				
 				# Ensure all talents exist in dictionary
 				for talent_id in Data.tech_tree.keys():

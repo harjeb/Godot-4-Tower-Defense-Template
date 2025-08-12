@@ -188,11 +188,15 @@ class CraftingRecipe:
 		setup_result_icon(result_gem_id)
 		
 		# 设置描述
-		var current_gem_data = Data.gems.get(current_gem_id, {})
-		var result_gem_data = Data.gems.get(result_gem_id, {})
+		var current_gem_data = {}
+		if Data.gems.has(current_gem_id):
+			current_gem_data = Data.gems.get(current_gem_id)
+		var result_gem_data = {}
+		if Data.gems.has(result_gem_id):
+			result_gem_data = Data.gems.get(result_gem_id)
 		description_label.text = "%s → %s" % [
-			current_gem_data.get("name", "未知"),
-			result_gem_data.get("name", "未知")
+			current_gem_data.get("name") if current_gem_data.has("name") else "未知",
+			result_gem_data.get("name") if result_gem_data.has("name") else "未知"
 		]
 	
 	func create_material_icons(gem_id: String, count: int):
@@ -227,7 +231,10 @@ class CraftingRecipe:
 				result_icon.modulate = ElementSystem.get_element_color(gem_data.element)
 			
 			# 高级宝石使用更亮的颜色
-			if gem_data.get("level", 1) == 3:
+			var gem_level = 1
+			if gem_data.has("level"):
+				gem_level = gem_data.get("level")
+			if gem_level == 3:
 				result_icon.modulate = result_icon.modulate.lightened(0.3)
 	
 	func _on_craft_pressed():

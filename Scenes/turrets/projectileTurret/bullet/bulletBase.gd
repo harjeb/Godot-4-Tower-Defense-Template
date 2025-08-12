@@ -106,7 +106,9 @@ func _apply_gem_effects(target: Node):
 	
 	# 应用所有宝石效果
 	for effect_name in gem_effects:
-		var effect_data = Data.effects.get(effect_name, {})
+		var effect_data = {}
+		if Data.effects.has(effect_name):
+			effect_data = Data.effects.get(effect_name)
 		if not effect_data.is_empty():
 			effect_manager.apply_effect(target, effect_name, effect_data, self)
 

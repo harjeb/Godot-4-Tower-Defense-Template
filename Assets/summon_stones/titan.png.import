@@ -2,16 +2,12 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://e4p5q6l7m8n9o0p1"
-path="res://.godot/imported/titan.png-7ag9e8bff1h9g1h1h1d1e1h6i6e1h1i1.ctex"
-metadata={
-"vram_texture": false
-}
+uid="uid://1c1o2fm6y15y"
+valid=false
 
 [deps]
 
 source_file="res://Assets/summon_stones/titan.png"
-dest_files=["res://.godot/imported/titan.png-7ag9e8bff1h9g1h1h1d1e1h6i6e1h1i1.ctex"]
 
 [params]
 

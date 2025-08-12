@@ -30,13 +30,13 @@ var turret_type := "":
 		$Sprite2D.texture = load(turret_data["sprite"])
 		$Sprite2D.scale = Vector2(turret_data["scale"], turret_data["scale"])
 		rotates = turret_data["rotates"]
-		element = turret_data.get("element", "neutral")
-		turret_category = turret_data.get("turret_category", "")
-		da_bonus = turret_data.get("da_bonus", 0.05)
-		ta_bonus = turret_data.get("ta_bonus", 0.01)
-		passive_effect = turret_data.get("passive_effect", "")
-		aoe_type = turret_data.get("aoe_type", "none")
-		special_mechanics = turret_data.get("special_mechanics", [])
+		element = turret_data.get("element") if turret_data.has("element") else "neutral"
+		turret_category = turret_data.get("turret_category") if turret_data.has("turret_category") else ""
+		da_bonus = turret_data.get("da_bonus") if turret_data.has("da_bonus") else 0.05
+		ta_bonus = turret_data.get("ta_bonus") if turret_data.has("ta_bonus") else 0.01
+		passive_effect = turret_data.get("passive_effect") if turret_data.has("passive_effect") else ""
+		aoe_type = turret_data.get("aoe_type") if turret_data.has("aoe_type") else "none"
+		special_mechanics = turret_data.get("special_mechanics") if turret_data.has("special_mechanics") else []
 		for stat in turret_data["stats"].keys():
 			set(stat, turret_data["stats"][stat])
 
@@ -216,10 +216,10 @@ func apply_passive_bonuses() -> void:
 	var synergy_manager = get_passive_synergy_manager()
 	if synergy_manager:
 		var bonuses = synergy_manager.calculate_tower_bonuses(self)
-		passive_da_bonus = bonuses.get("da_bonus", 0.0)
-		passive_ta_bonus = bonuses.get("ta_bonus", 0.0)
-		passive_damage_bonus = bonuses.get("damage_bonus", 0.0)
-		passive_speed_bonus = bonuses.get("speed_bonus", 0.0)
+		passive_da_bonus = bonuses.get("da_bonus") if bonuses.has("da_bonus") else 0.0
+		passive_ta_bonus = bonuses.get("ta_bonus") if bonuses.has("ta_bonus") else 0.0
+		passive_damage_bonus = bonuses.get("damage_bonus") if bonuses.has("damage_bonus") else 0.0
+		passive_speed_bonus = bonuses.get("speed_bonus") if bonuses.has("speed_bonus") else 0.0
 
 ## Get effective stats with passive bonuses applied
 func get_effective_stats() -> Dictionary:
@@ -240,7 +240,7 @@ func get_passive_synergy_manager():
 # 新增方法
 func equip_gem(gem_data: Dictionary) -> bool:
 	# Check if tower can equip this gem level
-	var gem_level = gem_data.get("level", 1)
+	var gem_level = gem_data.get("level") if gem_data.has("level") else 1
 	if not can_equip_gem_level(gem_level):
 		return false
 	
@@ -268,7 +268,7 @@ func get_max_gem_level() -> int:
 func unequip_gem():
 	var old_gem = equipped_gem
 	equipped_gem = {}
-	element = Data.turrets[turret_type].get("element", "neutral")
+	element = Data.turrets[turret_type].get("element") if Data.turrets[turret_type].has("element") else "neutral"
 	
 	# 移除宝石技能效果
 	_remove_gem_skills()
@@ -361,17 +361,6 @@ func find_charge_system():
 	if tree and tree.current_scene:
 		charge_system = tree.current_scene.get_node_or_null("ChargeSystem")
 
-# Modify attack() method to add charge after successful attack
-func attack():
-	if is_instance_valid(current_target):
-		# Existing attack logic...
-		pass
-	else:
-		try_get_closest_target()
-	
-	# Add charge after attack (only for towers with charge abilities)
-	if charge_system and deployed and has_charge_ability():
-		charge_system.add_charge(self)
 
 func get_charge_progress() -> float:
 	if not charge_system:
@@ -406,13 +395,14 @@ func _apply_gem_skills():
 	if tower_type_key == "":
 		return
 	
-	var gem_skills = equipped_gem.get("tower_skills", {}).get(tower_type_key, {})
+	var tower_skills = equipped_gem.get("tower_skills") if equipped_gem.has("tower_skills") else {}
+	var gem_skills = tower_skills.get(tower_type_key) if tower_skills.has(tower_type_key) else {}
 	if gem_skills.is_empty():
 		return
 	
 	# 应用技能效果
 	for effect_name in gem_skills.effects:
-		var effect_data = Data.effects.get(effect_name, {})
+		var effect_data = Data.effects.get(effect_name) if Data.effects.has(effect_name) else {}
 		if not effect_data.is_empty():
 			_apply_tower_effect(effect_data)
 
@@ -486,7 +476,11 @@ func _apply_stat_modifier(effect_data: Dictionary):
 			if operation == "add":
 				# 伤害间隔修改（用于末日塔）
 				if has_method("set_damage_interval"):
-					call("set_damage_interval", get("damage_interval", 1.0) + value)
+					var damage_interval = 1.0
+					# Check if damage_interval property exists
+					if "damage_interval" in self:
+						damage_interval = get("damage_interval")
+					call("set_damage_interval", damage_interval + value)
 		"movement_speed":
 			# 移动速度修改（用于捕获塔的减速效果）
 			pass
@@ -590,7 +584,8 @@ func get_gem_skills_info() -> Array:
 	if tower_type_key == "":
 		return []
 	
-	var gem_skills = equipped_gem.get("tower_skills", {}).get(tower_type_key, {})
+	var tower_skills = equipped_gem.get("tower_skills") if equipped_gem.has("tower_skills") else {}
+	var gem_skills = tower_skills.get(tower_type_key) if tower_skills.has(tower_type_key) else {}
 	if gem_skills.is_empty():
 		return []
 	
@@ -605,7 +600,8 @@ func get_active_gem_effects() -> Array:
 	if tower_type_key == "":
 		return []
 	
-	var gem_skills = equipped_gem.get("tower_skills", {}).get(tower_type_key, {})
+	var tower_skills = equipped_gem.get("tower_skills") if equipped_gem.has("tower_skills") else {}
+	var gem_skills = tower_skills.get(tower_type_key) if tower_skills.has(tower_type_key) else {}
 	if gem_skills.is_empty():
 		return []
 	

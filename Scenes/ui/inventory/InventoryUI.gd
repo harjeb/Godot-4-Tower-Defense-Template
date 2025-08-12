@@ -88,7 +88,10 @@ func _on_inventory_updated(inventory: Array):
 func _on_slot_item_clicked(slot_index: int, item_data: Dictionary):
 	if not item_data.is_empty():
 		gem_selected.emit(item_data)
-		print("选中宝石: ", item_data.get("name", "未知"))
+		var gem_name = "未知"
+		if item_data.has("name"):
+			gem_name = item_data.get("name")
+		print("选中宝石: ", gem_name)
 
 func _on_close_button_pressed():
 	close_inventory()

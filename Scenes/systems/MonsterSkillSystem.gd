@@ -179,7 +179,7 @@ func execute_self_destruct(enemy: Node2D, skill_data: Dictionary) -> void:
 
 ## Apply petrification effect to enemy
 func apply_petrification_effect(enemy: Node2D, skill_data: Dictionary) -> void:
-	if not is_instance_valid(enemy) or not enemy.has_method("get"):
+	if not is_instance_valid(enemy):
 		return
 	
 	var effect = {
@@ -220,8 +220,8 @@ func apply_stun_effect(tower: Turret, skill_data: Dictionary) -> void:
 	skill_effect_applied.emit(tower, "stun", skill_data.stun_duration)
 
 ## Get towers within range of a position
-func get_towers_in_range(center: Vector2, range: float) -> Array[Turret]:
-	var towers: Array[Turret] = []
+func get_towers_in_range(center: Vector2, range: float) -> Array:
+	var towers: Array = []
 	
 	# Use group-based approach for better flexibility
 	var turret_nodes = get_tree().get_nodes_in_group("turret")
@@ -276,23 +276,23 @@ func remove_effect(effect: Dictionary) -> void:
 	
 	match effect.type:
 		"frost":
-			if effect.has("original_attack_speed") and effect.target.has_method("set"):
+			if effect.has("original_attack_speed"):
 				effect.target.attack_speed = effect.original_attack_speed
 			effect.target.modulate = Color.WHITE
 		"acceleration":
-			if effect.has("original_speed") and effect.target.has_method("set"):
+			if effect.has("original_speed"):
 				effect.target.speed = effect.original_speed
 			effect.target.modulate = Color.WHITE
 		"petrification":
-			if effect.has("original_defense") and effect.target.has_method("set"):
+			if effect.has("original_defense"):
 				effect.target.defense = effect.original_defense
 			effect.target.modulate = Color.WHITE
-			if effect.target.has_method("get") and effect.target.has("enemy_type"):
-				var enemy_data = Data.enemies.get(effect.target.enemy_type, {})
+			if effect.target.has("enemy_type"):
+				var enemy_data = Data.enemies.get(effect.target.enemy_type) if Data.enemies.has(effect.target.enemy_type) else {}
 				if enemy_data.has("stats") and enemy_data.stats.has("speed"):
-					effect.target.speed = enemy_data.stats.get("speed", 1.0)
+					effect.target.speed = enemy_data.stats.get("speed") if enemy_data.stats.has("speed") else 1.0
 		"stun":
-			if effect.has("original_attack_speed") and effect.target.has_method("set"):
+			if effect.has("original_attack_speed"):
 				effect.target.attack_speed = effect.original_attack_speed
 			effect.target.modulate = Color.WHITE
 
@@ -301,7 +301,7 @@ func process_monster_skills(delta: float) -> void:
 	var enemies = get_tree().get_nodes_in_group("enemy")
 	
 	for enemy in enemies:
-		if not is_instance_valid(enemy) or not enemy.has_method("get"):
+		if not is_instance_valid(enemy):
 			continue
 		
 		# Update skill timers
@@ -325,8 +325,8 @@ func trigger_monster_skill(enemy: Node2D, skill: String) -> void:
 			trigger_acceleration(enemy)
 		"self_destruct":
 			# Only trigger if HP is below threshold
-			if enemy.has_method("get") and enemy.has("hp"):
-				var max_hp = enemy.get("max_hp") if enemy.has("max_hp") else enemy.get("hp", 100.0)
+			if enemy.has("hp"):
+				var max_hp = enemy.max_hp if enemy.has("max_hp") else enemy.hp
 				var current_hp = enemy.hp
 				if max_hp > 0 and current_hp / max_hp < 0.10:
 					trigger_self_destruct(enemy)

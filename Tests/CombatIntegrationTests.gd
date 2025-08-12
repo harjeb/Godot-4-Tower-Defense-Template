@@ -30,7 +30,10 @@ func create_test_turret(turret_type: String = "gatling", element: String = "neut
 	# 设置基础属性
 	turret.turret_type = turret_type
 	turret.element = element
-	turret.turret_category = Data.turrets[turret_type].get("turret_category", "projectile")
+	var turret_category = "projectile"
+	if Data.turrets[turret_type].has("turret_category"):
+		turret_category = Data.turrets[turret_type].get("turret_category")
+	turret.turret_category = turret_category
 	turret.damage = Data.turrets[turret_type]["stats"]["damage"]
 	turret.equipped_gem = {}
 	

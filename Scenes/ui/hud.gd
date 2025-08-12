@@ -281,7 +281,10 @@ func _on_settings_closed():
 	pass  # UI 已经处理隐藏
 
 func _on_gem_selected(gem_data: Dictionary):
-	print("选中宝石: ", gem_data.get("name", "未知"))
+	var gem_name = "未知"
+	if gem_data.has("name"):
+		gem_name = gem_data.get("name")
+	print("选中宝石: ", gem_name)
 	# 可以在这里处理宝石装备逻辑
 
 func _on_buff_removed(slot_index: int):

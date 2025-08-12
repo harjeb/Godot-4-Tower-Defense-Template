@@ -65,7 +65,10 @@ func unlock_tech(tech_id: String) -> bool:
 	return true
 
 func is_tech_unlocked(tech_id: String) -> bool:
-	return tech_id in unlocked_techs or Data.tech_tree.get(tech_id, {}).get("unlocked", false)
+	if tech_id in unlocked_techs:
+		return true
+	var tech_data = Data.tech_tree.get(tech_id) if Data.tech_tree.has(tech_id) else {}
+	return tech_data.get("unlocked") if tech_data.has("unlocked") else false
 
 func apply_tech_effects(tech_id: String):
 	match tech_id:
@@ -104,7 +107,7 @@ func load_tech_progress():
 			var json = JSON.new()
 			if json.parse(json_string) == OK:
 				var save_data = json.data
-				unlocked_techs = save_data.get("unlocked_techs", [])
+				unlocked_techs = save_data.get("unlocked_techs") if save_data.has("unlocked_techs") else []
 				# Apply unlocked tech effects
 				for tech_id in unlocked_techs:
 					apply_tech_effects(tech_id)

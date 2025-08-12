@@ -21,10 +21,10 @@ var enemy_type := "":
 		enemy_type = val
 		var enemy_data = Data.enemies[val]
 		$Sprite2D.texture = load(enemy_data["sprite"])
-		element = enemy_data.get("element", "neutral")
-		special_abilities = enemy_data.get("special_abilities", [])
-		monster_skills = enemy_data.get("monster_skills", [])
-		skill_cooldowns = enemy_data.get("skill_cooldowns", {})
+		element = enemy_data.get("element") if enemy_data.has("element") else "neutral"
+		special_abilities = enemy_data.get("special_abilities") if enemy_data.has("special_abilities") else []
+		monster_skills = enemy_data.get("monster_skills") if enemy_data.has("monster_skills") else []
+		skill_cooldowns = enemy_data.get("skill_cooldowns") if enemy_data.has("skill_cooldowns") else {}
 		max_hp = enemy_data["stats"]["hp"]
 		
 		# Initialize skill timers

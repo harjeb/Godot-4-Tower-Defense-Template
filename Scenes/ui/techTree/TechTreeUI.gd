@@ -101,7 +101,10 @@ func create_talent_buttons(parent: VBoxContainer):
 		info_vbox.add_child(desc_label)
 		
 		var level_label = Label.new()
-		level_label.text = "等级: 0/%d" % talent_data.get("max_level", 1)
+		var max_level = 1
+		if talent_data.has("max_level"):
+			max_level = talent_data.get("max_level")
+		level_label.text = "等级: 0/%d" % max_level
 		level_label.add_theme_font_size_override("font_size", 12)
 		info_vbox.add_child(level_label)
 		
@@ -143,7 +146,9 @@ func update_ui():
 		var components = talent_buttons[talent_id]
 		var talent_data = Data.tech_tree[talent_id]
 		var current_level = tech_point_system.get_talent_level(talent_id)
-		var max_level = talent_data.get("max_level", 1)
+		var max_level = 1
+		if talent_data.has("max_level"):
+			max_level = talent_data.get("max_level")
 		var can_upgrade = tech_point_system.can_upgrade_talent(talent_id)
 		
 		# Update level display
@@ -160,7 +165,10 @@ func update_ui():
 		
 		# Update panel appearance based on requirements
 		var requirements_met = true
-		for requirement in talent_data.get("requirements", []):
+		var requirements = []
+		if talent_data.has("requirements"):
+			requirements = talent_data.get("requirements")
+		for requirement in requirements:
 			if tech_point_system.get_talent_level(requirement) == 0:
 				requirements_met = false
 				break
