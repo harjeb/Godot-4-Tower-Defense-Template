@@ -166,7 +166,7 @@ func test_combined_stress_test() -> Dictionary:
 		
 		# Sample memory usage every 10 frames
 		if frame % 10 == 0:
-			var memory_usage = OS.get_static_memory_usage_by_type()
+			var memory_usage = OS.get_static_memory_usage()
 			memory_samples.append(memory_usage)
 	
 	var end_time = Time.get_time_dict_from_system()
@@ -306,7 +306,7 @@ func test_memory_usage_validation() -> Dictionary:
 	print("  Testing memory usage validation...")
 	
 	# Measure baseline memory
-	var baseline_memory = OS.get_static_memory_usage_by_type()
+	var baseline_memory = OS.get_static_memory_usage()
 	
 	# Create full load scenario
 	var towers = create_mock_towers(20)
@@ -319,7 +319,7 @@ func test_memory_usage_validation() -> Dictionary:
 		await get_tree().process_frame
 	
 	# Measure peak memory
-	var peak_memory = OS.get_static_memory_usage_by_type()
+	var peak_memory = OS.get_static_memory_usage()
 	
 	# Clean up
 	cleanup_mock_towers(towers)
@@ -331,7 +331,7 @@ func test_memory_usage_validation() -> Dictionary:
 		await get_tree().process_frame
 	
 	# Measure final memory
-	var final_memory = OS.get_static_memory_usage_by_type()
+	var final_memory = OS.get_static_memory_usage()
 	
 	# Calculate memory increase
 	var memory_increase = peak_memory - baseline_memory
@@ -554,7 +554,9 @@ func simulate_monster_processing(monster: Dictionary):
 func simulate_monster_skill_processing(monster: Dictionary):
 	if monster.has("skill"):
 		# Simulate skill cooldown and effects
-		var cooldown = monster.get("skill_cooldown", 0)
+		var cooldown = 0
+		if monster.has("skill_cooldown"):
+			cooldown = monster.get("skill_cooldown")
 		if cooldown <= 0:
 			# Process skill effect
 			var effect_strength = randf() * 100

@@ -73,7 +73,7 @@ func update_performance_metrics():
 	current_projectile_count = count_active_projectiles()
 	
 	# Update memory usage
-	memory_usage_mb = OS.get_static_memory_usage_by_type()[OS.TYPE_NIL] / (1024.0 * 1024.0)
+	memory_usage_mb = OS.get_static_memory_usage() / (1024.0 * 1024.0)
 	
 	# Log performance data (can be disabled in release)
 	if OS.is_debug_build():
@@ -211,8 +211,8 @@ func limit_projectiles():
 				projectiles[i].queue_free()
 
 ## Get all deployed towers
-func get_deployed_towers() -> Array[Turret]:
-	var towers: Array[Turret] = []
+func get_deployed_towers() -> Array:
+	var towers: Array = []
 	# Use group-based approach for better flexibility
 	var turret_nodes = get_tree().get_nodes_in_group("turret")
 	for turret in turret_nodes:
