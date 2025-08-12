@@ -28,7 +28,9 @@ func fire_projectile(projectile_index: int, total_count: int):
 	projectile.element = element
 	projectile.turret_category = turret_category
 	projectile.equipped_gem = equipped_gem
-	projectile.speed = bulletSpeed
+	# Apply projectile speed talent boost
+	var speed_multiplier = Globals.get("projectile_speed_boost") if Globals.has_method("get") and Globals.get("projectile_speed_boost") != null else 1.0
+	projectile.speed = bulletSpeed * speed_multiplier
 	projectile.pierce = bulletPierce
 	
 	# Add slight spread for multiple projectiles

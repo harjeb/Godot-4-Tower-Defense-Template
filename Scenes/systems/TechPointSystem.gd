@@ -93,6 +93,8 @@ func apply_talent_effect(talent_id: String):
 			apply_economic_boost(level * 0.20)
 		"wave_preparation":
 			apply_wave_preparation_boost(level * 10.0)
+		"projectile_speed_boost":
+			apply_projectile_speed_boost(level * 0.25)
 
 ## Apply all talent effects (called on game start)
 func apply_all_talent_effects():
@@ -163,6 +165,11 @@ func apply_wave_preparation_boost(additional_time: float):
 	if not Globals.has_method("set_wave_preparation_time"):
 		Globals.set("wave_preparation_bonus", additional_time)
 	talent_effect_applied.emit("wave_preparation", additional_time)
+
+func apply_projectile_speed_boost(multiplier: float):
+	# Store projectile speed boost globally for projectile turrets
+	Globals.set("projectile_speed_boost", 1.0 + multiplier)
+	talent_effect_applied.emit("projectile_speed_boost", multiplier)
 
 ## Helper function to get all towers
 func get_all_towers() -> Array[Turret]:

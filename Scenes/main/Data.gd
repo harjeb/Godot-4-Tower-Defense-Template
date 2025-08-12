@@ -1037,6 +1037,14 @@ const tech_tree := {
 		"max_level": 3,
 		"unlocked": false,
 		"requirements": []
+	},
+	"projectile_speed_boost": {
+		"name": "弹道加速",
+		"description": "投射物速度+25%",
+		"cost": 2,
+		"max_level": 4,
+		"unlocked": false,
+		"requirements": ["attack_speed_boost"]
 	}
 }
 
