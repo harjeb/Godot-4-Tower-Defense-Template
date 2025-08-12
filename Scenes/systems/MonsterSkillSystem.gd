@@ -325,8 +325,11 @@ func trigger_monster_skill(enemy: Node2D, skill: String) -> void:
 			trigger_acceleration(enemy)
 		"self_destruct":
 			# Only trigger if HP is below threshold
-			if enemy.has_method("get") and enemy.has("hp") and enemy.has("max_hp") and enemy.max_hp > 0 and enemy.hp / enemy.max_hp < 0.10:
-				trigger_self_destruct(enemy)
+			if enemy.has_method("get") and enemy.has("hp"):
+				var max_hp = enemy.get("max_hp") if enemy.has("max_hp") else enemy.get("hp", 100.0)
+				var current_hp = enemy.hp
+				if max_hp > 0 and current_hp / max_hp < 0.10:
+					trigger_self_destruct(enemy)
 		"petrification":
 			trigger_petrification(enemy)
 
@@ -378,3 +381,17 @@ func animate_text_effect(label: Label) -> void:
 	tween.parallel().tween_property(label, "position", label.position + Vector2(0, -30), 2.0)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 2.0)
 	tween.tween_callback(label.queue_free)
+
+# Add dispel functionality for summon stones
+func remove_enemy_buffs(enemy: Node2D):
+	# Remove all active effects targeting this enemy
+	var effects_to_remove: Array[Dictionary] = []
+	
+	for effect in active_effects:
+		if effect.target == enemy and effect.type in ["acceleration", "petrification"]:
+			effects_to_remove.append(effect)
+	
+	# Remove the effects
+	for effect in effects_to_remove:
+		remove_effect(effect)
+		active_effects.erase(effect)

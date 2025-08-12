@@ -179,6 +179,10 @@ func calculate_da_ta_attacks() -> int:
 	
 	# Check TA first (less likely)
 	if rand_val < total_ta:
+		# Notify PassiveSynergyManager of TA trigger for Doomsday Tower passive
+		var synergy_manager = get_passive_synergy_manager()
+		if synergy_manager and synergy_manager.has_method("on_ta_triggered"):
+			synergy_manager.on_ta_triggered(self)
 		return 3
 	# Check DA
 	elif rand_val < total_da:
@@ -298,9 +302,45 @@ func get_turret_info() -> Dictionary:
 		"type": turret_type,
 		"level": turret_level,
 		"element": element,
-		"category": turret_category,
+				"category": turret_category,
 		"equipped_gem": equipped_gem,
 		"damage": damage,
 		"attack_speed": attack_speed,
 		"attack_range": attack_range
 	}
+
+# Charge System Integration
+var current_charge: int = 0
+var charge_system: ChargeSystem
+
+func _ready():
+	# Existing _ready code...
+	find_charge_system()
+
+func find_charge_system():
+	var tree = get_tree()
+	if tree and tree.current_scene:
+		charge_system = tree.current_scene.get_node_or_null("ChargeSystem")
+
+# Modify attack() method to add charge after successful attack
+func attack():
+	if is_instance_valid(current_target):
+		# Existing attack logic...
+		pass
+	else:
+		try_get_closest_target()
+	
+	# Add charge after attack (only for towers with charge abilities)
+	if charge_system and deployed and has_charge_ability():
+		charge_system.add_charge(self)
+
+func get_charge_progress() -> float:
+	if not charge_system:
+		return 0.0
+	return float(charge_system.get_tower_charge(self)) / float(charge_system.max_charge)
+
+func can_use_charge_ability() -> bool:
+	return charge_system and charge_system.has_charge_ability(turret_type) and current_charge >= 100
+
+func has_charge_ability() -> bool:
+	return charge_system and charge_system.has_charge_ability(turret_type)

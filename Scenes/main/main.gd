@@ -30,6 +30,36 @@ func add_managers():
 	weapon_wheel_manager.name = "WeaponWheelManager"
 	get_tree().root.add_child(weapon_wheel_manager)
 	
+	# 创建并添加被动协同管理器
+	var passive_synergy_manager = PassiveSynergyManager.new()
+	passive_synergy_manager.name = "PassiveSynergyManager"
+	add_child(passive_synergy_manager)
+	
+	# 创建并添加怪物技能系统
+	var monster_skill_system = MonsterSkillSystem.new()
+	monster_skill_system.name = "MonsterSkillSystem"
+	add_child(monster_skill_system)
+	
+	# 创建并添加充能系统
+	var charge_system = ChargeSystem.new()
+	charge_system.name = "ChargeSystem"
+	add_child(charge_system)
+	
+	# 创建并添加召唤石系统
+	var summon_stone_system = SummonStoneSystem.new()
+	summon_stone_system.name = "SummonStoneSystem"
+	add_child(summon_stone_system)
+	
+	# 创建并添加科技点系统
+	var tech_point_system = TechPointSystem.new()
+	tech_point_system.name = "TechPointSystem"
+	add_child(tech_point_system)
+	
+	# 创建并添加波次管理系统
+	var wave_manager = WaveManager.new()
+	wave_manager.name = "WaveManager"
+	add_child(wave_manager)
+	
 	# 添加一些初始物品用于测试 (可选)
 	call_deferred("add_test_items")  
 

@@ -885,3 +885,189 @@ const maps := {
 		},
 	}
 }
+
+# Charge System Configuration
+const charge_system := {
+	"max_charge": 100,
+	"charge_per_attack": {
+		"arrow_tower": 8,
+		"capture_tower": 12,
+		"mage_tower": 15
+	},
+	"charge_abilities": {
+		"arrow_tower": {
+			"name": "剑雨",
+			"description": "小范围AOE，在目标区域施放15支箭",
+			"range": 120.0,
+			"arrow_count": 15,
+			"damage_multiplier": 0.8
+		},
+		"capture_tower": {
+			"name": "刺网", 
+			"description": "捕获网范围增加100%，被捕单位防御力降低15%",
+			"range_multiplier": 2.0,
+			"armor_reduction": 0.15,
+			"duration": 3.0
+		},
+		"mage_tower": {
+			"name": "激活",
+			"description": "攻击速度增加30%，持续3S",
+			"speed_bonus": 0.30,
+			"duration": 3.0
+		}
+	}
+}
+
+# Summon Stone Configuration
+const summon_stones := {
+	"shiva": {
+		"name": "湿婆",
+		"description": "所有塔攻击力+150%，持续15S",
+		"cooldown": 180.0,
+		"duration": 15.0,
+		"effect_type": "global_damage_boost",
+		"damage_multiplier": 2.5,
+		"icon": "res://Assets/summon_stones/shiva.png"
+	},
+	"lucifer": {
+		"name": "路西法",
+		"description": "圆形范围内共造成2000点光属性伤害",
+		"cooldown": 120.0,
+		"effect_type": "targeted_damage",
+		"damage": 2000,
+		"element": "light",
+		"range": 150.0,
+		"icon": "res://Assets/summon_stones/lucifer.png"
+	},
+	"europa": {
+		"name": "欧罗巴",
+		"description": "圆形范围内共造成1200点冰属性伤害，并冻结所有单位2s",
+		"cooldown": 180.0,
+		"effect_type": "freeze_damage",
+		"damage": 1200,
+		"element": "ice",
+		"range": 180.0,
+		"freeze_duration": 2.0,
+		"icon": "res://Assets/summon_stones/europa.png"
+	},
+	"titan": {
+		"name": "泰坦",
+		"description": "对所有塔充能30，伤害增加30%，持续5S",
+		"cooldown": 120.0,
+		"effect_type": "charge_and_damage",
+		"charge_bonus": 30,
+		"damage_bonus": 0.30,
+		"duration": 5.0,
+		"icon": "res://Assets/summon_stones/titan.png"
+	},
+	"zeus": {
+		"name": "宙斯",
+		"description": "驱散范围内敌方的BUFF，造成1500点光属性伤害",
+		"cooldown": 180.0,
+		"effect_type": "dispel_damage",
+		"damage": 1500,
+		"element": "light",
+		"range": 200.0,
+		"icon": "res://Assets/summon_stones/zeus.png"
+	}
+}
+
+# Tech Tree Configuration with Tech Points
+const tech_tree := {
+	"damage_boost": {
+		"name": "伤害强化",
+		"description": "所有炮塔伤害+10%",
+		"cost": 1,
+		"max_level": 5,
+		"unlocked": false,
+		"requirements": []
+	},
+	"attack_speed_boost": {
+		"name": "攻速强化",
+		"description": "所有炮塔攻速+8%",
+		"cost": 1,
+		"max_level": 5,
+		"unlocked": false,
+		"requirements": []
+	},
+	"range_boost": {
+		"name": "射程强化",
+		"description": "所有炮塔射程+15%",
+		"cost": 1,
+		"max_level": 3,
+		"unlocked": false,
+		"requirements": []
+	},
+	"da_chance_boost": {
+		"name": "连击强化",
+		"description": "DA几率+5%",
+		"cost": 2,
+		"max_level": 3,
+		"unlocked": false,
+		"requirements": ["damage_boost"]
+	},
+	"ta_chance_boost": {
+		"name": "三连击强化", 
+		"description": "TA几率+3%",
+		"cost": 3,
+		"max_level": 2,
+		"unlocked": false,
+		"requirements": ["da_chance_boost"]
+	},
+	"charge_speed_boost": {
+		"name": "充能加速",
+		"description": "充能获取速度+50%",
+		"cost": 2,
+		"max_level": 3,
+		"unlocked": false,
+		"requirements": ["attack_speed_boost"]
+	},
+	"economic_boost": {
+		"name": "经济强化",
+		"description": "击杀敌人金币+20%",
+		"cost": 1,
+		"max_level": 4,
+		"unlocked": false,
+		"requirements": []
+	},
+	"wave_preparation": {
+		"name": "战术准备",
+		"description": "波次间隔时间+10秒",
+		"cost": 1,
+		"max_level": 3,
+		"unlocked": false,
+		"requirements": []
+	}
+}
+
+# Tower Mechanics Configuration
+const tower_mechanics := {
+	"ricochet_shots": {
+		"description": "子弹在敌人间弹射",
+		"max_bounces": 5,
+		"bounce_range": 80.0,
+		"damage_falloff": 0.9
+	},
+	"periodic_aoe": {
+		"description": "周期性区域伤害",
+		"pulse_interval": 3.0,
+		"range_multiplier": 1.0
+	},
+	"persistent_slow": {
+		"description": "持续范围减速",
+		"slow_strength": 0.3,
+		"tick_interval": 0.5
+	},
+	"dot_damage": {
+		"description": "持续伤害效果",
+		"dot_duration": 15.0,
+		"tick_interval": 1.0,
+		"damage_per_tick": 25.0
+	},
+	"armor_reduction": {
+		"description": "降低护甲效果",
+		"reduction_amount": 0.05,
+		"max_stacks": 10,
+		"duration": 5.0
+	}
+}

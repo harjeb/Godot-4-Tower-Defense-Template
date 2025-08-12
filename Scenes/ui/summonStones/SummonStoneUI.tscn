@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://summon_stone_ui_scene"]
+
+[ext_resource type="Script" path="res://Scenes/ui/summonStones/SummonStoneUI.gd" id="1"]
+[ext_resource type="Theme" path="res://Scenes/ui/default_theme.tres" id="2"]
+
+[node name="SummonStoneUI" type="Control"]
+script = ExtResource("1")
+theme = ExtResource("2")
+
+[node name="Panel" type="Panel" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0

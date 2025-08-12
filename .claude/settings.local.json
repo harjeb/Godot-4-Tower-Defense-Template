@@ -3,7 +3,8 @@
     "allow": [
       "Bash(mkdir:*)",
       "Bash(find:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

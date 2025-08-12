@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://tech_tree_system_scene"]
+
+[ext_resource type="Script" path="res://Scenes/systems/TechTreeSystem.gd" id="1"]
+
+[node name="TechTreeSystem" type="Node"]
+script = ExtResource("1")

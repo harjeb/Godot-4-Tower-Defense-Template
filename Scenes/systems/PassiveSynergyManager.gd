@@ -166,7 +166,22 @@ func calculate_stealth_detection_bonus(tower: Turret) -> Dictionary:
 
 func calculate_ta_cooldown_reduction(tower: Turret) -> Dictionary:
 	# Doomsday Tower: -0.5s CD per TA triggered anywhere (handled globally)
+	# This tower gets reduced cooldown when any tower triggers TA
 	return {"da_bonus": 0.0, "ta_bonus": 0.0, "damage_bonus": 0.0, "speed_bonus": 0.0}
+
+## Handle TA trigger events to reduce Doomsday Tower cooldown
+## @param triggering_tower: The tower that triggered TA
+func on_ta_triggered(triggering_tower: Turret):
+	# Find all Doomsday Towers and reduce their cooldown by 0.5s
+	var all_towers = get_all_deployed_towers()
+	
+	for tower in all_towers:
+		if tower.turret_type == "doomsday_tower" and is_instance_valid(tower):
+			# Reduce attack cooldown by 0.5 seconds
+			if tower.has_node("AttackCooldown"):
+				var cooldown_timer = tower.get_node("AttackCooldown")
+				if cooldown_timer is Timer:
+					cooldown_timer.wait_time = max(0.1, cooldown_timer.wait_time - 0.5)
 
 func calculate_adjacent_tower_boost(tower: Turret) -> Dictionary:
 	# Pulse Tower: +5% speed, +5% damage to adjacent 2 towers
