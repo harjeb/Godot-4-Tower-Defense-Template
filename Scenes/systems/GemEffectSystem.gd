@@ -24,6 +24,8 @@ var enemy_cache_last_update: int = 0
 var enemy_cache_update_interval: int = 5  # 每5帧更新一次缓存
 var tower_cache: Array = []
 var tower_cache_last_update: int = 0
+var hero_cache: Array = []
+var hero_cache_last_update: int = 0
 
 # 效果类型到更新频率的映射
 const EFFECT_UPDATE_FREQUENCY = {
@@ -1202,3 +1204,320 @@ func apply_permanent_stat_steal(tower: Node, stat_type: String, steal_amount: fl
 func apply_no_healing_effect(target: Node, duration: float) -> void:
 	if target and target.has_method("set_no_healing"):
 		target.set_no_healing(true, duration)
+
+## Hero System Integration
+## Enhanced methods to support hero-specific effects and mechanics
+
+# Apply effect specifically to heroes
+func apply_effect_to_hero(hero: HeroBase, effect_type: String, duration: float, stacks: int = 1) -> void:
+	"""Apply effect specifically to heroes with hero-specific handling"""
+	if not is_instance_valid(hero):
+		_log_error("Cannot apply effect to invalid hero", {
+			"effect_type": effect_type,
+			"duration": duration,
+			"stacks": stacks
+		})
+		return
+	
+	# Apply hero-specific effect modifications
+	var modified_duration = duration
+	var modified_stacks = stacks
+	
+	# Hero resistance/vulnerability to certain effects
+	match effect_type:
+		"burn":
+			if hero.element == "fire":
+				# Fire heroes take reduced burn damage and duration
+				modified_duration *= 0.5
+				modified_stacks = max(1, stacks - 1)
+		"freeze":
+			if hero.element == "ice":
+				# Ice heroes are immune to freeze
+				return
+			else:
+				# Heroes have general freeze resistance
+				modified_duration *= 0.7
+		"stun":
+			# Heroes have stun resistance
+			modified_duration *= 0.6
+		"silence":
+			# Silence affects hero skill casting
+			hero.skill_charge_paused = true
+		"invulnerable":
+			# Heroes can be made invulnerable during skills
+			pass
+	
+	# Apply the effect using existing system
+	apply_effect(hero, effect_type, modified_duration, modified_stacks)
+	
+	# Log hero-specific effect application
+	_log_info("Hero effect applied", {
+		"hero_type": hero.hero_type,
+		"hero_name": hero.hero_name,
+		"effect_type": effect_type,
+		"original_duration": duration,
+		"modified_duration": modified_duration,
+		"stacks": modified_stacks
+	})
+
+# Get heroes in area (similar to enemies)
+func get_heroes_in_area(center: Vector2, radius: float) -> Array:
+	"""Get heroes within specified area"""
+	_update_hero_cache()
+	
+	var heroes = []
+	var radius_squared = radius * radius
+	
+	for hero in hero_cache:
+		if is_instance_valid(hero):
+			var distance_squared = hero.global_position.distance_squared_to(center)
+			if distance_squared <= radius_squared:
+				heroes.append(hero)
+	
+	return heroes
+
+# Update hero cache
+func _update_hero_cache() -> void:
+	"""Update hero cache for area queries"""
+	if frame_counter - hero_cache_last_update >= enemy_cache_update_interval:
+		var tree = get_tree()
+		if not tree or not tree.current_scene:
+			hero_cache.clear()
+			return
+		
+		var all_heroes = tree.current_scene.get_tree().get_nodes_in_group("heroes")
+		hero_cache.clear()
+		
+		for hero in all_heroes:
+			if is_instance_valid(hero) and hero.has_method("global_position"):
+				hero_cache.append(hero)
+		
+		hero_cache_last_update = frame_counter
+
+# Apply aura effects to heroes
+func apply_hero_aura(center: Vector2, radius: float, effect_type: String, caster: Node = null) -> void:
+	"""Apply aura effects to heroes in range"""
+	var heroes = get_heroes_in_area(center, radius)
+	for hero in heroes:
+		# Don't apply self-cast auras to the caster
+		if caster and hero == caster:
+			continue
+		
+		match effect_type:
+			"flame_aura":
+				apply_flame_aura_to_hero(hero, caster)
+			"enhanced_flame_aura":
+				apply_enhanced_flame_aura_to_hero(hero, caster)
+			"healing_aura":
+				apply_healing_aura_to_hero(hero)
+			"buff_aura":
+				apply_buff_aura_to_hero(hero, caster)
+
+func apply_flame_aura_to_hero(hero: HeroBase, caster: HeroBase) -> void:
+	"""Apply flame aura effects to hero"""
+	if not hero or not caster:
+		return
+	
+	var aura_radius = caster.get_meta("flame_aura_radius", 200.0)
+	var aura_damage = caster.get_meta("flame_aura_damage", 30.0)
+	
+	# Heroes don't take damage from friendly auras, but get buffs instead
+	# Apply fire damage bonus
+	if not hero.get_meta("flame_aura_active", false):
+		hero.set_meta("flame_aura_active", true)
+		hero.set_meta("flame_aura_damage_bonus", aura_damage * 0.1) # 10% of aura damage as bonus
+
+func apply_enhanced_flame_aura_to_hero(hero: HeroBase, caster: HeroBase) -> void:
+	"""Apply enhanced flame aura effects to hero"""
+	if not hero or not caster:
+		return
+	
+	var aura_radius = caster.get_meta("enhanced_aura_radius", 250.0)
+	var aura_damage = caster.get_meta("enhanced_aura_damage", 65.0)
+	var burn_stacks = caster.get_meta("enhanced_aura_burn_stacks", 3)
+	
+	# Enhanced aura gives bigger bonuses
+	if not hero.get_meta("enhanced_flame_aura_active", false):
+		hero.set_meta("enhanced_flame_aura_active", true)
+		hero.set_meta("enhanced_flame_damage_bonus", aura_damage * 0.15)
+		# Also increase attack speed
+		hero.current_stats["attack_speed"] *= 1.1
+
+func apply_healing_aura_to_hero(hero: HeroBase) -> void:
+	"""Apply healing aura to hero"""
+	if not hero or not hero.is_alive:
+		return
+	
+	var healing_amount = 50.0 # Base healing per second
+	
+	if hero.health_bar and hero.health_bar.value < hero.health_bar.max_value:
+		hero.health_bar.value = min(hero.health_bar.max_value, hero.health_bar.value + healing_amount)
+
+func apply_buff_aura_to_hero(hero: HeroBase, caster: HeroBase) -> void:
+	"""Apply general buff aura to hero"""
+	if not hero or not caster:
+		return
+	
+	# Apply temporary stat bonuses
+	hero.da_bonus += 0.1 # 10% damage amplification
+	hero.charge_generation_rate *= 1.1 # 10% faster charge
+
+# Process hero-specific effects
+func process_hero_effects(hero: HeroBase, delta: float) -> void:
+	"""Process ongoing effects specific to heroes"""
+	if not hero or not hero.is_alive:
+		return
+	
+	var hero_effects = get_effects_on_target(hero)
+	
+	for effect in hero_effects:
+		process_individual_hero_effect(hero, effect, delta)
+
+func process_individual_hero_effect(hero: HeroBase, effect: StatusEffect, delta: float) -> void:
+	"""Process individual hero effect"""
+	match effect.effect_type:
+		"burn":
+			process_hero_burn_effect(hero, effect, delta)
+		"freeze":
+			process_hero_freeze_effect(hero, effect)
+		"stun":
+			process_hero_stun_effect(hero, effect)
+		"silence":
+			process_hero_silence_effect(hero, effect)
+		"flame_armor":
+			process_flame_armor_effect(hero, effect, delta)
+
+func process_hero_burn_effect(hero: HeroBase, effect: StatusEffect, delta: float) -> void:
+	"""Process burn effect on hero"""
+	var damage_per_second = 20.0 * effect.stacks
+	var damage_this_tick = damage_per_second * delta
+	
+	# Apply burn damage
+	if hero.health_bar:
+		hero.health_bar.value = max(0, hero.health_bar.value - damage_this_tick)
+		
+		# Check for hero death
+		if hero.health_bar.value <= 0 and hero.is_alive:
+			hero.die()
+
+func process_hero_freeze_effect(hero: HeroBase, effect: StatusEffect) -> void:
+	"""Process freeze effect on hero"""
+	# Freeze slows down hero actions
+	hero.skill_charge_paused = true
+	hero.current_stats["attack_speed"] *= 0.1 # Very slow attacks
+
+func process_hero_stun_effect(hero: HeroBase, effect: StatusEffect) -> void:
+	"""Process stun effect on hero"""
+	# Stun completely disables hero
+	hero.skill_charge_paused = true
+	hero.attack_target = null # Clear current target
+
+func process_hero_silence_effect(hero: HeroBase, effect: StatusEffect) -> void:
+	"""Process silence effect on hero"""
+	# Silence prevents skill usage but allows basic attacks
+	hero.skill_charge_paused = true
+	# Clear any queued skills
+	hero.skill_queue.clear()
+
+func process_flame_armor_effect(hero: HeroBase, effect: StatusEffect, delta: float) -> void:
+	"""Process flame armor effect"""
+	var aura_radius = effect.data.get("aura_radius", 200.0)
+	var aura_damage = effect.data.get("aura_damage", 30.0)
+	
+	# Apply aura damage to nearby enemies
+	var enemies = get_enemies_in_area(hero.global_position, aura_radius)
+	for enemy in enemies:
+		if enemy.has_method("take_damage"):
+			enemy.take_damage(aura_damage * delta, "fire")
+
+# Enhanced performance stats for hero effects
+func get_hero_performance_stats() -> Dictionary:
+	"""Get performance statistics including hero effects"""
+	var base_stats = get_performance_stats()
+	
+	var hero_stats = {
+		"hero_cache_size": hero_cache.size(),
+		"last_hero_cache_update": frame_counter - hero_cache_last_update,
+		"heroes_with_effects": 0,
+		"hero_effects_by_type": {}
+	}
+	
+	# Count hero effects
+	for target in active_effects_by_target:
+		if target is HeroBase:
+			hero_stats.heroes_with_effects += 1
+			var target_effects = active_effects_by_target[target]
+			for effect in target_effects:
+				var effect_type = effect.effect_type
+				if not hero_stats.hero_effects_by_type.has(effect_type):
+					hero_stats.hero_effects_by_type[effect_type] = 0
+				hero_stats.hero_effects_by_type[effect_type] += 1
+	
+	base_stats["hero_stats"] = hero_stats
+	return base_stats
+
+# Hero-specific effect cleanup
+func clear_hero_aura_effects(hero: HeroBase) -> void:
+	"""Clear aura effects from hero when out of range"""
+	if not hero:
+		return
+	
+	# Remove aura bonuses
+	hero.remove_meta("flame_aura_active")
+	hero.remove_meta("flame_aura_damage_bonus")
+	hero.remove_meta("enhanced_flame_aura_active")
+	hero.remove_meta("enhanced_flame_damage_bonus")
+	
+	# Reset DA bonus (this could be more sophisticated)
+	hero.da_bonus = 0.0
+
+# Skill-based effect application
+func apply_skill_area_effect(skill: HeroSkill, center: Vector2, caster: HeroBase) -> void:
+	"""Apply area effects for hero skills"""
+	if not skill or not caster:
+		return
+	
+	var effect_radius = skill.get_area_of_effect()
+	if effect_radius <= 0:
+		return
+	
+	match skill.skill_id:
+		"shadow_strike":
+			apply_shadow_strike_effects(center, effect_radius, caster)
+		"flame_armor":
+			apply_flame_armor_skill_effects(caster)
+		"flame_phantom":
+			apply_flame_phantom_effects(center, caster)
+
+func apply_shadow_strike_effects(center: Vector2, radius: float, caster: HeroBase) -> void:
+	"""Apply Shadow Strike skill effects"""
+	var enemies = get_enemies_in_area(center, radius)
+	var damage = caster.current_stats.get("damage", 0) * 1.5 # 50% more damage
+	
+	for enemy in enemies:
+		if enemy.has_method("take_damage"):
+			enemy.take_damage(damage, caster.element)
+		
+		# Apply minor stun
+		apply_effect_to_hero(enemy, "stun", 0.5, 1)
+
+func apply_flame_armor_skill_effects(caster: HeroBase) -> void:
+	"""Apply Flame Armor skill effects"""
+	# Apply flame armor effect to caster
+	apply_effect_to_hero(caster, "flame_armor", 15.0, 1)
+	
+	# Set up aura data
+	caster.set_meta("flame_aura_radius", 200.0)
+	caster.set_meta("flame_aura_damage", 30.0)
+
+func apply_flame_phantom_effects(center: Vector2, caster: HeroBase) -> void:
+	"""Apply Flame Phantom skill effects"""
+	# Enhanced flame aura
+	caster.set_meta("enhanced_aura_radius", 250.0)
+	caster.set_meta("enhanced_aura_damage", 65.0)
+	caster.set_meta("enhanced_aura_burn_stacks", 3)
+	
+	# Apply burn to all enemies in area
+	var enemies = get_enemies_in_area(center, 250.0)
+	for enemy in enemies:
+		apply_effect(enemy, "burn", 5.0, 3)

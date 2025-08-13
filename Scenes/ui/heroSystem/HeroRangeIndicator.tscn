@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://d1e2f3a4b5c6"]
+
+[ext_resource type="Script" path="res://Scenes/ui/heroSystem/HeroRangeIndicator.gd" id="1_7d8e"]
+
+[node name="HeroRangeIndicator" type="Node2D"]
+script = ExtResource("1_7d8e")
+
+# This node will dynamically create visual indicators for:
+# - Hero deployment zones
+# - Skill ranges
+# - Area effects
+# - Damage previews
+# All visual elements are created at runtime via the script

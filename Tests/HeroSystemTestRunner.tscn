@@ -1,0 +1,139 @@
+[gd_scene load_steps=4 format=3 uid="uid://b8j3x6k5p3n8e"]
+
+[ext_resource type="Script" path="res://Tests/HeroSystemTestRunner.gd" id="1_0f8l"]
+
+[node name="HeroSystemTestRunner" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_0f8l")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="Header" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 0
+size_flags_vertical = 0
+
+[node name="TitleLabel" type="Label" parent="Panel/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = preload("res://Assets/fonts/default_font.tres")
+theme_override_font_sizes/font_size = 24
+text = "Hero System Test Runner"
+horizontal_alignment = 1
+
+[node name="Control" type="Control" parent="Panel/VBoxContainer/Header"]
+layout_mode = 2
+
+[node name="ExportButton" type="Button" parent="Panel/VBoxContainer/Header"]
+layout_mode = 2
+text = "Export Results"
+
+[node name="MainContent" type="HSplitContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LeftPanel" type="VBoxContainer" parent="Panel/VBoxContainer/MainContent"]
+layout_mode = 2
+size_flags_horizontal = 1
+theme_override_constants/separation = 10
+
+[node name="SuiteListLabel" type="Label" parent="Panel/VBoxContainer/MainContent/LeftPanel"]
+layout_mode = 2
+text = "Test Suites:"
+horizontal_alignment = 1
+
+[node name="SuiteList" type="ItemList" parent="Panel/VBoxContainer/MainContent/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+
+[node name="ButtonContainer" type="HBoxContainer" parent="Panel/VBoxContainer/MainContent/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="RunButton" type="Button" parent="Panel/VBoxContainer/MainContent/LeftPanel/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Run Selected"
+
+[node name="StopButton" type="Button" parent="Panel/VBoxContainer/MainContent/LeftPanel/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Stop"
+
+[node name="Control" type="Control" parent="Panel/VBoxContainer/MainContent/LeftPanel/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ClearButton" type="Button" parent="Panel/VBoxContainer/MainContent/LeftPanel/ButtonContainer"]
+layout_mode = 2
+text = "Clear Results"
+
+[node name="RightPanel" type="VBoxContainer" parent="Panel/VBoxContainer/MainContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="StatusContainer" type="HBoxContainer" parent="Panel/VBoxContainer/MainContent/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="StatusLabel" type="Label" parent="Panel/VBoxContainer/MainContent/RightPanel/StatusContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Ready to run tests"
+clip_text = true
+
+[node name="ProgressBar" type="ProgressBar" parent="Panel/VBoxContainer/MainContent/RightPanel/StatusContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+value = 0.0
+step = 0.01
+
+[node name="ResultsText" type="RichTextLabel" parent="Panel/VBoxContainer/MainContent/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_2")
+bbcode_enabled = true
+text = "Test results will appear here..."
+
+[node name="SummaryLabel" type="Label" parent="Panel/VBoxContainer/MainContent/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 0
+text = ""
+horizontal_alignment = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.133333, 0.133333, 0.133333, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2"]
+bg_color = Color(0.133333, 0.133333, 0.133333, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4

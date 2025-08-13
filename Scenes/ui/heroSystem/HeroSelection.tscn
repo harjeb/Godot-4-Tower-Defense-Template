@@ -1,0 +1,101 @@
+[gd_scene load_steps=4 format=3 uid="uid://b7k8l9m0n4x"]
+
+[ext_resource type="Script" path="res://Scenes/ui/heroSystem/HeroSelection.gd" id="1_2a3b"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.1, 0.1, 0.1, 0.9)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2"]
+bg_color = Color(0.2, 0.3, 0.4, 0.8)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="HeroSelection" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_2a3b")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+
+[node name="TitleLabel" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.01
+anchor_bottom = 0.15
+offset_top = 0.0
+offset_bottom = 0.0
+text = "选择你的英雄"
+horizontal_alignment = 1
+vertical_alignment = 1
+font_size = 24
+
+[node name="DescriptionLabel" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.15
+anchor_bottom = 0.25
+offset_top = 0.0
+offset_bottom = 0.0
+text = "从以下5个英雄中选择1个加入战斗"
+horizontal_alignment = 1
+vertical_alignment = 1
+font_size = 14
+
+[node name="HeroOptionsContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+offset_left = 20.0
+offset_top = 80.0
+offset_right = -20.0
+offset_bottom = -20.0
+theme_override_constants/separation = 10
+
+[node name="HeroOption1" type="Button" parent="Panel/HeroOptionsContainer"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_2")
+text = "英雄选项 1"
+
+[node name="HeroOption2" type="Button" parent="Panel/HeroOptionsContainer"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_2")
+text = "英雄选项 2"
+
+[node name="HeroOption3" type="Button" parent="Panel/HeroOptionsContainer"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_2")
+text = "英雄选项 3"
+
+[node name="HeroOption4" type="Button" parent="Panel/HeroOptionsContainer"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_2")
+text = "英雄选项 4"
+
+[node name="HeroOption5" type="Button" parent="Panel/HeroOptionsContainer"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_2")
+text = "英雄选项 5"

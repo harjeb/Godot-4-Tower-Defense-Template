@@ -1,0 +1,80 @@
+[gd_scene load_steps=6 format=3 uid="uid://b5l6m0n3k2x"]
+
+[ext_resource type="Script" path="res://Scenes/heroes/HeroBase.gd" id="1_8n7gj"]
+
+[node name="HeroBase" type="Node2D"]
+script = ExtResource("1_8n7gj")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = -40.0
+offset_top = -60.0
+offset_right = 40.0
+offset_bottom = 20.0
+
+[node name="HealthBar" type="ProgressBar" parent="UI"]
+layout_mode = 0
+offset_left = -30.0
+offset_top = -50.0
+offset_right = 30.0
+offset_bottom = -45.0
+size_flags_horizontal = 4
+value = 100.0
+
+[node name="ChargeBar" type="ProgressBar" parent="UI"]
+layout_mode = 0
+offset_left = -30.0
+offset_top = -40.0
+offset_right = 30.0
+offset_bottom = -35.0
+size_flags_horizontal = 4
+value = 0.0
+max_value = 100.0
+
+[node name="LevelLabel" type="Label" parent="UI"]
+layout_mode = 0
+offset_left = -20.0
+offset_top = -30.0
+offset_right = 20.0
+offset_bottom = -15.0
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="CastingIndicator" type="Control" parent="UI"]
+layout_mode = 0
+offset_left = -40.0
+offset_top = 10.0
+offset_right = 40.0
+offset_bottom = 25.0
+visible = false
+
+[node name="Label" type="Label" parent="UI/CastingIndicator"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Casting..."
+horizontal_alignment = 1
+
+[node name="RespawnIndicator" type="Control" parent="UI"]
+layout_mode = 0
+offset_left = -40.0
+offset_top = 10.0
+offset_right = 40.0
+offset_bottom = 25.0
+visible = false
+
+[node name="Label" type="Label" parent="UI/RespawnIndicator"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Respawn: 10s"
+horizontal_alignment = 1

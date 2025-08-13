@@ -1,9 +1,12 @@
-[gd_scene load_steps=5 format=3 uid="uid://chgwxhrtw1lln"]
+[gd_scene load_steps=7 format=3 uid="uid://chgwxhrtw1lln"]
 
 [ext_resource type="Script" uid="uid://cfyfhy8nj7yr0" path="res://Scenes/main/main.gd" id="1_22s4b"]
 [ext_resource type="Script" uid="uid://o6ifuvp8iee3" path="res://Scenes/ui/hud.gd" id="2_cy82p"]
 [ext_resource type="PackedScene" uid="uid://d0otd33ubv3hq" path="res://Scenes/ui/turretUI/turret_buy_container.tscn" id="3_pljl8"]
 [ext_resource type="Script" uid="uid://brmqp6wit161p" path="res://Scenes/ui/turretUI/turrets_panel.gd" id="3_ryupq"]
+[ext_resource type="PackedScene" uid="uid://b7k8l9m0n4x" path="res://Scenes/ui/heroSystem/HeroSelection.tscn" id="4_hero_sel"]
+[ext_resource type="PackedScene" uid="uid://c9d8e7f6a5b" path="res://Scenes/ui/heroSystem/HeroInfoPanel.tscn" id="5_hero_info"]
+[ext_resource type="PackedScene" uid="uid://d8e9f0a1b2c" path="res://Scenes/ui/heroSystem/HeroTalentSelection.tscn" id="6_talent_sel"]
 
 [node name="main" type="Node2D"]
 script = ExtResource("1_22s4b")
@@ -71,5 +74,15 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
+
+# Hero System UI Components
+[node name="HeroSelection" parent="UI" instance=ExtResource("4_hero_sel")]
+visible = false
+
+[node name="HeroInfoPanel" parent="UI" instance=ExtResource("5_hero_info")]
+visible = false
+
+[node name="HeroTalentSelection" parent="UI" instance=ExtResource("6_talent_sel")]
+visible = false
 
 [connection signal="timeout" from="UI/HUD/WaveWaitTimer" to="UI/HUD" method="_on_wave_wait_timer_timeout"]

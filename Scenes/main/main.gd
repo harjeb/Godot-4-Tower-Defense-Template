@@ -12,6 +12,12 @@ const TechPointSystem = preload("res://Scenes/systems/TechPointSystem.gd")
 const WaveManager = preload("res://Scenes/systems/WaveManager.gd")
 const EffectManager = preload("res://Scenes/systems/EffectManager.gd")
 
+# Hero system classes
+const HeroManager = preload("res://Scenes/systems/HeroManager.gd")
+const HeroTalentSystem = preload("res://Scenes/systems/HeroTalentSystem.gd")
+const LevelModifierSystem = preload("res://Scenes/systems/LevelModifierSystem.gd")
+const HeroRangeIndicator = preload("res://Scenes/ui/heroSystem/HeroRangeIndicator.gd")
+
 func _ready() -> void:
 	if not is_instance_valid(Globals):
 		push_error("Globals not available")
@@ -122,6 +128,29 @@ func _create_manager(manager_name: String, manager_class, parent_node: Node) -> 
 	effect_manager.name = "EffectManager"
 	add_child(effect_manager)
 	
+	# 创建并添加英雄系统
+	var hero_manager = HeroManager.new()
+	hero_manager.name = "HeroManager"
+	add_child(hero_manager)
+	
+	# 创建并添加英雄天赋系统
+	var hero_talent_system = HeroTalentSystem.new()
+	hero_talent_system.name = "HeroTalentSystem"
+	add_child(hero_talent_system)
+	
+	# 创建并添加关卡词缀系统
+	var level_modifier_system = LevelModifierSystem.new()
+	level_modifier_system.name = "LevelModifierSystem"
+	add_child(level_modifier_system)
+	
+	# 创建并添加英雄范围指示器
+	var hero_range_indicator = HeroRangeIndicator.new()
+	hero_range_indicator.name = "HeroRangeIndicator"
+	add_child(hero_range_indicator)
+	
+	# 连接英雄系统
+	connect_hero_systems()
+	
 	# 添加一些初始物品用于测试 (可选)
 	call_deferred("add_test_items")  
 
@@ -153,6 +182,86 @@ func run_system_tests():
 		push_error("核心系统未正确加载！")
 	
 	# print("==== 系统测试完成 ====\n")
+
+func connect_hero_systems() -> void:
+	"""连接英雄系统之间的信号"""
+	var hero_manager = get_node_or_null("HeroManager") as HeroManager
+	var talent_system = get_node_or_null("HeroTalentSystem") as HeroTalentSystem
+	var modifier_system = get_node_or_null("LevelModifierSystem") as LevelModifierSystem
+	var range_indicator = get_node_or_null("HeroRangeIndicator") as HeroRangeIndicator
+	
+	# 连接UI组件
+	var hero_selection_ui = get_node_or_null("UI/HeroSelection")
+	var hero_info_panel = get_node_or_null("UI/HeroInfoPanel")
+	var talent_selection_ui = get_node_or_null("UI/HeroTalentSelection")
+	
+	if hero_manager and hero_selection_ui:
+		# 连接英雄管理器到选择UI
+		hero_selection_ui.setup_from_hero_manager(hero_manager)
+	
+	if hero_manager and hero_info_panel:
+		# 连接英雄管理器到信息面板
+		hero_info_panel.setup_from_hero_manager(hero_manager)
+	
+	if hero_manager and talent_selection_ui:
+		# 连接英雄管理器到天赋选择UI
+		talent_selection_ui.setup_from_hero_manager(hero_manager)
+	
+	if hero_manager and talent_system:
+		# 连接英雄管理器和天赋系统
+		hero_manager.connect("hero_deployed", _on_hero_deployed)
+		hero_manager.connect("hero_leveled_up", _on_hero_leveled_up)
+		
+		if talent_system.has_signal("talent_selected"):
+			talent_system.connect("talent_selected", _on_talent_selected)
+	
+	if hero_manager and range_indicator:
+		# 连接英雄管理器到范围指示器
+		hero_manager.connect("hero_selection_started", _on_hero_selection_started)
+		range_indicator.connect("deployment_position_selected", _on_deployment_position_selected)
+	
+	if modifier_system:
+		# 连接词缀系统
+		if modifier_system.has_signal("modifiers_applied"):
+			modifier_system.connect("modifiers_applied", _on_level_modifiers_applied)
+
+func _on_hero_deployed(hero: HeroBase, position: Vector2) -> void:
+	"""处理英雄部署"""
+	print("Hero deployed: ", hero.hero_name, " at ", position)
+	
+	# 连接英雄到天赋系统
+	var talent_system = get_node_or_null("HeroTalentSystem") as HeroTalentSystem
+	if talent_system:
+		talent_system.connect_to_hero(hero)
+	
+	# 更新英雄信息面板
+	var hero_info_panel = get_node_or_null("UI/HeroInfoPanel") as Control
+	if hero_info_panel:
+		hero_info_panel.update_hero_info(hero)
+
+func _on_hero_leveled_up(hero: HeroBase, new_level: int) -> void:
+	"""处理英雄升级"""
+	print("Hero leveled up: ", hero.hero_name, " to level ", new_level)
+
+func _on_talent_selected(hero: HeroBase, talent_id: String, level: int) -> void:
+	"""处理天赋选择"""
+	print("Talent selected: ", talent_id, " for ", hero.hero_name, " at level ", level)
+
+func _on_level_modifiers_applied(modifiers: Array[Dictionary]) -> void:
+	"""处理关卡词缀应用"""
+	print("Level modifiers applied: ", modifiers.size(), " modifiers")
+
+func _on_hero_selection_started(hero_type: String) -> void:
+	"""处理英雄选择开始"""
+	var range_indicator = get_node_or_null("HeroRangeIndicator") as HeroRangeIndicator
+	if range_indicator:
+		range_indicator.show_deployment_zones(hero_type)
+
+func _on_deployment_position_selected(position: Vector2) -> void:
+	"""处理部署位置选择"""
+	var hero_manager = get_node_or_null("HeroManager") as HeroManager
+	if hero_manager:
+		hero_manager.deploy_hero_at_position(position)
 
 func _exit_tree():
 	# 清理管理器（如果需要）

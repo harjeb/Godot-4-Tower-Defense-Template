@@ -3728,3 +3728,255 @@ const tower_mechanics := {
 		"effect_type": "infinite_duration"
 	}
 }
+
+## Hero System Data
+## Complete hero definitions, skills, talents, and level modifiers
+
+var heroes := {
+	"phantom_spirit": {
+		"name": "幻影之灵",
+		"element": "fire",
+		"base_stats": {
+			"max_hp": 540,
+			"damage": 58,
+			"defense": 10,
+			"attack_speed": 0.9,
+			"attack_range": 150.0,
+			"movement_speed": 0.0  # Heroes are stationary when deployed
+		},
+		"skills": ["shadow_strike", "flame_armor", "flame_phantom"],
+		"sprite": "res://Assets/heroes/phantom_spirit.png",
+		"scene": "res://Scenes/heroes/phantom_spirit.tscn",
+		"charge_generation": 2.0,  # Charge per second
+		"max_charge": 100,
+		"description": "火系近战英雄，拥有强大的影拳技能和火焰防护能力"
+	}
+}
+
+var hero_skills := {
+	"shadow_strike": {
+		"name": "无影拳",
+		"type": "A",
+		"charge_cost": 20,
+		"cooldown": 5.0,
+		"cast_range": 200.0,
+		"effect_radius": 150.0,
+		"damage_base": 70,
+		"damage_scaling": 1.0,  # Multiplied by hero attack
+		"invulnerable_duration": 0.3,
+		"attack_count": 5,
+		"attack_interval": 0.3,
+		"description": "对范围内敌人发动连续攻击，期间无敌",
+		"icon": "res://Assets/skills/shadow_strike.png"
+	},
+	"flame_armor": {
+		"name": "火焰甲", 
+		"type": "B",
+		"charge_cost": 35,
+		"cooldown": 12.0,
+		"duration": 15.0,
+		"defense_bonus": 15,
+		"shield_amount": 500,
+		"aura_radius": 200.0,
+		"aura_damage": 30.0,
+		"description": "增加防御力和护盾，周围敌人持续受到火焰伤害",
+		"icon": "res://Assets/skills/flame_armor.png"
+	},
+	"flame_phantom": {
+		"name": "末炎幻象",
+		"type": "C",
+		"charge_cost": 60,
+		"cooldown": 90.0,
+		"duration": 30.0,
+		"phantom_damage": 200,
+		"phantom_attack_speed": 1.7,
+		"phantom_range": 350.0,
+		"aura_radius": 250.0,
+		"aura_damage": 65.0,
+		"burn_stacks": 3,
+		"description": "召唤火焰幻象协同作战，大幅增强周围火焰效果",
+		"icon": "res://Assets/skills/flame_phantom.png"
+	}
+}
+
+var hero_talents := {
+	"phantom_spirit": {
+		"level_5": [
+			{
+				"id": "enhanced_strikes",
+				"name": "强化打击",
+				"description": "无影拳攻击次数+2",
+				"effects": {
+					"shadow_strike_attack_count": 2
+				}
+			},
+			{
+				"id": "rapid_charge",
+				"name": "快速充能",
+				"description": "充能速度+50%",
+				"effects": {
+					"charge_generation_multiplier": 1.5
+				}
+			}
+		],
+		"level_10": [
+			{
+				"id": "flame_mastery",
+				"name": "火焰精通",
+				"description": "火焰甲光环伤害+100%",
+				"effects": {
+					"flame_armor_aura_damage": 2.0
+				}
+			},
+			{
+				"id": "defensive_stance",
+				"name": "防御姿态",
+				"description": "最大生命值+25%，防御力+10",
+				"effects": {
+					"max_hp_multiplier": 1.25,
+					"defense_bonus": 10
+				}
+			}
+		],
+		"level_15": [
+			{
+				"id": "phantom_lord",
+				"name": "幻象之主",
+				"description": "末炎幻象持续时间+50%，幻象伤害+100%",
+				"effects": {
+					"flame_phantom_duration": 1.5,
+					"flame_phantom_damage": 2.0
+				}
+			},
+			{
+				"id": "infernal_aura",
+				"name": "地狱光环",
+				"description": "所有技能光环范围+50%，附加燃烧效果",
+				"effects": {
+					"aura_radius_multiplier": 1.5,
+					"aura_burn_chance": 0.3
+				}
+			}
+		]
+	}
+}
+
+var level_modifiers := {
+	"positive": [
+		{
+			"id": "hero_damage_boost",
+			"name": "英雄强化",
+			"description": "所有英雄伤害+25%",
+			"effects": {
+				"hero_damage_multiplier": 1.25
+			},
+			"weight": 10
+		},
+		{
+			"id": "fast_respawn",
+			"name": "快速复活",
+			"description": "英雄复活时间-50%",
+			"effects": {
+				"respawn_time_multiplier": 0.5
+			},
+			"weight": 8
+		},
+		{
+			"id": "enhanced_charge",
+			"name": "充能增强",
+			"description": "英雄充能速度+100%",
+			"effects": {
+				"charge_generation_multiplier": 2.0
+			},
+			"weight": 12
+		},
+		{
+			"id": "skill_cooldown_reduction",
+			"name": "技能冷却",
+			"description": "技能冷却时间-30%",
+			"effects": {
+				"skill_cooldown_multiplier": 0.7
+			},
+			"weight": 15
+		},
+		{
+			"id": "double_experience",
+			"name": "经验加倍",
+			"description": "英雄获得经验+100%",
+			"effects": {
+				"experience_multiplier": 2.0
+			},
+			"weight": 6
+		}
+	],
+	"negative": [
+		{
+			"id": "reduced_hero_hp",
+			"name": "脆弱英雄",
+			"description": "所有英雄最大生命值-20%",
+			"effects": {
+				"hero_hp_multiplier": 0.8
+			},
+			"weight": 8
+		},
+		{
+			"id": "slow_charge",
+			"name": "充能迟缓",
+			"description": "英雄充能速度-40%",
+			"effects": {
+				"charge_generation_multiplier": 0.6
+			},
+			"weight": 10
+		},
+		{
+			"id": "increased_cooldowns",
+			"name": "技能延迟",
+			"description": "技能冷却时间+50%",
+			"effects": {
+				"skill_cooldown_multiplier": 1.5
+			},
+			"weight": 12
+		},
+		{
+			"id": "expensive_skills",
+			"name": "技能耗费",
+			"description": "技能充能消耗+30%",
+			"effects": {
+				"skill_cost_multiplier": 1.3
+			},
+			"weight": 9
+		}
+	],
+	"neutral": [
+		{
+			"id": "hero_range_boost",
+			"name": "远程专精",
+			"description": "英雄攻击距离+50%，攻击力-15%",
+			"effects": {
+				"attack_range_multiplier": 1.5,
+				"damage_multiplier": 0.85
+			},
+			"weight": 7
+		},
+		{
+			"id": "berserker_mode",
+			"name": "狂战士模式",
+			"description": "英雄攻击力+40%，防御力-30%",
+			"effects": {
+				"damage_multiplier": 1.4,
+				"defense_multiplier": 0.7
+			},
+			"weight": 8
+		},
+		{
+			"id": "support_focus",
+			"name": "辅助专精",
+			"description": "技能光环范围+100%，个人伤害-25%",
+			"effects": {
+				"aura_radius_multiplier": 2.0,
+				"damage_multiplier": 0.75
+			},
+			"weight": 6
+		}
+	]
+}
