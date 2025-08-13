@@ -1,5 +1,75 @@
 extends Node
 
+## Resource path constants for better maintainability
+const PATHS = {
+	"scenes": {
+		"turrets": {
+			"projectile": "res://Scenes/turrets/projectileTurret/projectileTurret.tscn",
+			"melee": "res://Scenes/turrets/meleeTurret/meleeTurret.tscn",
+			"ray": "res://Scenes/turrets/rayTurret/rayTurret.tscn",
+			"base": "res://Scenes/turrets/turretBase/turret_base.tscn"
+		},
+		"ui": {
+			"turret_details": "res://Scenes/ui/turretUI/turret_details.tscn"
+		}
+	},
+	"assets": {
+		"turrets": {
+			"techno": "res://Assets/turrets/technoturret.png",
+			"laser": "res://Assets/turrets/laserturret.png",
+			"real_laser": "res://Assets/turrets/reallaser.png",
+			"dynamite": "res://Assets/turrets/dynamite.png"
+		},
+		"bullets": {
+			"fire": "res://Assets/bullets/bullet1.tres",
+			"laser": "res://Assets/bullets/bullet2.tres"
+		},
+		"summon_stones": {
+			"shiva": "res://Assets/summon_stones/shiva.png",
+			"lucifer": "res://Assets/summon_stones/lucifer.png",
+			"europa": "res://Assets/summon_stones/europa.png",
+			"titan": "res://Assets/summon_stones/titan.png",
+			"zeus": "res://Assets/summon_stones/zeus.png"
+		},
+		"maps": {
+			"map1": "res://Assets/maps/map1.webp",
+			"map2": "res://Assets/maps/map2.png"
+		}
+	}
+}
+
+## Safe resource loading with error handling
+static func load_resource_safe(path: String, expected_type: String = "") -> Resource:
+	if not ResourceLoader.exists(path):
+		push_error("Resource not found: " + path)
+		return null
+	
+	var resource = load(path)
+	if not resource:
+		push_error("Failed to load resource: " + path)
+		return null
+	
+	if expected_type != "" and resource.get_class() != expected_type:
+		push_warning("Resource type mismatch for " + path + ". Expected: " + expected_type)
+	
+	return resource
+
+## Get path from PATHS dictionary with error checking
+static func get_path(category: String, subcategory: String, item: String) -> String:
+	if not PATHS.has(category):
+		push_error("Path category not found: " + category)
+		return ""
+	
+	if not PATHS[category].has(subcategory):
+		push_error("Path subcategory not found: " + category + "." + subcategory)
+		return ""
+	
+	if not PATHS[category][subcategory].has(item):
+		push_error("Path item not found: " + category + "." + subcategory + "." + item)
+		return ""
+	
+	return PATHS[category][subcategory][item]
+
 var turrets := {
 	"gatling": {
 		"stats": {

@@ -12,50 +12,90 @@ const TechPointSystem = preload("res://Scenes/systems/TechPointSystem.gd")
 const WaveManager = preload("res://Scenes/systems/WaveManager.gd")
 const EffectManager = preload("res://Scenes/systems/EffectManager.gd")
 
-func _ready():
-	Globals.mainNode = self
+func _ready() -> void:
+	if not is_instance_valid(Globals):
+		push_error("Globals not available")
+		return
 	
-	# 验证系统功能
+	Globals.main_node = self
+	
+	# Verify system functionality
 	run_system_tests()
 	
-	# 初始化管理器系统
+	# Initialize manager systems
 	init_manager_systems()
 	
-	# 加载地图
-	var map_key = Globals.selected_map if Globals.selected_map != "" else "map1"
-	var selectedMapScene := load(Data.maps[map_key]["scene"])
-	var map = selectedMapScene.instantiate()
-	map.map_type = map_key
+	# Load map
+	var map_key = Globals.selected_map if not Globals.selected_map.is_empty() else "map1"
+	if not Data.maps.has(map_key):
+		push_error("Map key not found: " + map_key)
+		map_key = "map1"  # Fallback
+	
+	var map_data = Data.maps[map_key]
+	var scene_path = map_data.get("scene", "")
+	if scene_path.is_empty():
+		push_error("Scene path empty for map: " + map_key)
+		return
+	
+	var selected_map_scene = Data.load_resource_safe(scene_path, "PackedScene")
+	if not selected_map_scene:
+		return
+	
+	var map = selected_map_scene.instantiate()
+	if not map:
+		push_error("Failed to instantiate map scene")
+		return
+	
+	if "map_type" in map:
+		map.map_type = map_key
+	
 	add_child(map)
+	Globals.current_map = map
 
-func init_manager_systems():
-	# 使用call_deferred避免忙碌状态问题
+func init_manager_systems() -> void:
+	# Use call_deferred to avoid busy state issues
 	call_deferred("add_managers")
-func add_managers():
-	# 创建并添加背包管理器
-	var inventory_manager = InventoryManager.new()
-	inventory_manager.name = "InventoryManager"
-	get_tree().root.add_child(inventory_manager)
+func add_managers() -> void:
+	var tree = get_tree()
+	if not tree:
+		push_error("Cannot access scene tree")
+		return
 	
-	# 创建并添加武器盘管理器
-	var weapon_wheel_manager = WeaponWheelManager.new()
-	weapon_wheel_manager.name = "WeaponWheelManager"
-	get_tree().root.add_child(weapon_wheel_manager)
+	# Create and add inventory manager
+	_create_manager("InventoryManager", InventoryManager, tree.root)
 	
-	# 创建并添加被动协同管理器
-	var passive_synergy_manager = PassiveSynergyManager.new()
-	passive_synergy_manager.name = "PassiveSynergyManager"
-	add_child(passive_synergy_manager)
+	# Create and add weapon wheel manager
+	_create_manager("WeaponWheelManager", WeaponWheelManager, tree.root)
 	
-	# 创建并添加怪物技能系统
-	var monster_skill_system = MonsterSkillSystem.new()
-	monster_skill_system.name = "MonsterSkillSystem"
-	add_child(monster_skill_system)
+	# Create and add passive synergy manager
+	_create_manager("PassiveSynergyManager", PassiveSynergyManager, self)
 	
-	# 创建并添加充能系统
-	var charge_system = ChargeSystem.new()
-	charge_system.name = "ChargeSystem"
-	add_child(charge_system)
+	# Create and add monster skill system
+	_create_manager("MonsterSkillSystem", MonsterSkillSystem, self)
+	
+	# Create and add charge system
+	_create_manager("ChargeSystem", ChargeSystem, self)
+	
+	# Create and add summon stone system
+	_create_manager("SummonStoneSystem", SummonStoneSystem, self)
+
+func _create_manager(manager_name: String, manager_class, parent_node: Node) -> void:
+	if not is_instance_valid(parent_node):
+		push_error("Cannot create manager '" + manager_name + "': parent node is invalid")
+		return
+	
+	# Check if manager already exists
+	if parent_node.get_node_or_null(manager_name):
+		push_warning("Manager '" + manager_name + "' already exists")
+		return
+	
+	var manager = manager_class.new()
+	if not manager:
+		push_error("Failed to create manager: " + manager_name)
+		return
+	
+	manager.name = manager_name
+	parent_node.add_child(manager)
 	
 	# 创建并添加召唤石系统
 	var summon_stone_system = SummonStoneSystem.new()

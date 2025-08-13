@@ -10,9 +10,18 @@ var effect_timers: Dictionary = {}   # target_id -> Timer
 func _ready():
 	set_process(true)
 
-func apply_effect(target: Node, effect_name: String, effect_data: Dictionary, source: Node = null):
-	if not target or not is_instance_valid(target):
-		return
+func apply_effect(target: Node, effect_name: String, effect_data: Dictionary, source: Node = null) -> bool:
+	if not is_instance_valid(target):
+		push_warning("Cannot apply effect '" + effect_name + "': target is invalid")
+		return false
+	
+	if effect_name.is_empty():
+		push_error("Cannot apply effect: effect_name is empty")
+		return false
+	
+	if effect_data.is_empty():
+		push_error("Cannot apply effect '" + effect_name + "': effect_data is empty")
+		return false
 	
 	var target_id = target.get_instance_id()
 	
@@ -46,8 +55,12 @@ func apply_effect(target: Node, effect_name: String, effect_data: Dictionary, so
 		_setup_effect_timer(target, effect)
 	
 	effect_applied.emit(target, effect_name, effect_data)
+	return true
 
-func _handle_burn_stacking(target: Node, new_effect: Dictionary):
+func _handle_burn_stacking(target: Node, new_effect: Dictionary) -> void:
+	if not is_instance_valid(target):
+		return
+	
 	var target_id = target.get_instance_id()
 	
 	if not active_effects.has(target_id):
@@ -74,10 +87,17 @@ func _handle_burn_stacking(target: Node, new_effect: Dictionary):
 		active_effects[target_id].append(new_effect)
 		_apply_single_effect(target, new_effect)
 
-func _apply_single_effect(target: Node, effect: Dictionary):
-	var effect_data = effect.data
+func _apply_single_effect(target: Node, effect: Dictionary) -> void:
+	if not is_instance_valid(target) or effect.is_empty():
+		return
 	
-	match effect_data.type:
+	var effect_data = effect.get("data", {})
+	if effect_data.is_empty():
+		push_warning("Effect data is empty for target: " + str(target.name))
+		return
+	
+	var effect_type = effect_data.get("type", "")
+	match effect_type:
 		"debuff":
 			_apply_debuff(target, effect)
 		"stat_modifier":

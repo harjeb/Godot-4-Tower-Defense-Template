@@ -26,19 +26,7 @@ var passive_speed_bonus: float = 0.0
 var turret_type := "":
 	set(value):
 		turret_type = value
-		var turret_data = Data.turrets[value]
-		$Sprite2D.texture = load(turret_data["sprite"])
-		$Sprite2D.scale = Vector2(turret_data["scale"], turret_data["scale"])
-		rotates = turret_data["rotates"]
-		element = turret_data.get("element") if turret_data.has("element") else "neutral"
-		turret_category = turret_data.get("turret_category") if turret_data.has("turret_category") else ""
-		da_bonus = turret_data.get("da_bonus") if turret_data.has("da_bonus") else 0.05
-		ta_bonus = turret_data.get("ta_bonus") if turret_data.has("ta_bonus") else 0.01
-		passive_effect = turret_data.get("passive_effect") if turret_data.has("passive_effect") else ""
-		aoe_type = turret_data.get("aoe_type") if turret_data.has("aoe_type") else "none"
-		special_mechanics = turret_data.get("special_mechanics") if turret_data.has("special_mechanics") else []
-		for stat in turret_data["stats"].keys():
-			set(stat, turret_data["stats"][stat])
+		_setup_turret_data(value)
 
 #Deploying
 var deployed := false
@@ -51,21 +39,23 @@ var current_target = null
 var attack_speed := 1.0:
 	set(value):
 		attack_speed = value
-		$AttackCooldown.wait_time = 1.0/value
+		var cooldown_node = get_node_or_null("AttackCooldown")
+		if cooldown_node:
+			cooldown_node.wait_time = 1.0/value
 var attack_range := 1.0:
 	set(value):
 		attack_range = value
-		$DetectionArea/CollisionShape2D.shape.radius = value
+		var detection_shape = get_node_or_null("DetectionArea/CollisionShape2D")
+		if detection_shape and detection_shape.shape:
+			detection_shape.shape.radius = value
 var damage := 1.0
 var turret_level := 1
 
 func _process(_delta):
 	if not deployed:
-		@warning_ignore("standalone_ternary")
-		colliding() if $CollisionArea.has_overlapping_areas() else not_colliding()
+		_handle_placement_collision()
 	elif rotates:
-		@warning_ignore("standalone_ternary")
-		look_at(current_target.position) if is_instance_valid(current_target) else try_get_closest_target()
+		_handle_target_rotation()
 
 func _draw():
 	if draw_range:
@@ -88,91 +78,198 @@ func not_colliding():
 	can_place = true
 	modulate = Color("6eff297a")
 
-func _on_detection_area_area_entered(area):
-	if deployed and not current_target:
-		var area_parent = area.get_parent()
-		if area_parent.is_in_group("enemy"):
-			# 检查隐身敌人的特殊逻辑
-			if area_parent.has_method("get_is_stealthed") and area_parent.get_is_stealthed():
-				# 某些炮塔类型可以检测隐身敌人
-				if can_detect_stealth():
-					current_target = area_parent
-			else:
-				current_target = area_parent
+func _on_detection_area_area_entered(area: Area2D) -> void:
+	if not deployed or current_target or not is_instance_valid(area):
+		return
+	
+	var area_parent = area.get_parent()
+	if not is_instance_valid(area_parent) or not area_parent.is_in_group("enemy"):
+		return
+	
+	# Check stealth logic
+	if area_parent.has_method("get_is_stealthed") and area_parent.get_is_stealthed():
+		if can_detect_stealth():
+			current_target = area_parent
+	else:
+		current_target = area_parent
 
 func can_detect_stealth() -> bool:
 	# 光元素炮塔或装备光宝石的炮塔可以检测隐身
 	return element == "light" or (equipped_gem.has("element") and equipped_gem.element == "light")
 
-func _on_detection_area_area_exited(area):
-	if deployed and current_target == area.get_parent():
+func _on_detection_area_area_exited(area: Area2D) -> void:
+	if not deployed or not is_instance_valid(area):
+		return
+	
+	var area_parent = area.get_parent()
+	if is_instance_valid(area_parent) and current_target == area_parent:
 		current_target = null
+		try_get_closest_target()
+
+## Helper methods for safe node access and game logic
+func _setup_turret_data(value: String) -> void:
+	if not Data.turrets.has(value):
+		push_error("Turret type '" + value + "' not found in Data.turrets")
+		return
+	
+	var turret_data = Data.turrets[value]
+	var sprite_node = get_node_or_null("Sprite2D")
+	if sprite_node and turret_data.has("sprite"):
+		var texture = Data.load_resource_safe(turret_data["sprite"], "Texture2D")
+		if texture:
+			sprite_node.texture = texture
+			var scale_value = turret_data.get("scale", 1.0)
+			sprite_node.scale = Vector2(scale_value, scale_value)
+	
+	rotates = turret_data.get("rotates", false)
+	element = turret_data.get("element", "neutral")
+	turret_category = turret_data.get("turret_category", "")
+	da_bonus = turret_data.get("da_bonus", 0.05)
+	ta_bonus = turret_data.get("ta_bonus", 0.01)
+	passive_effect = turret_data.get("passive_effect", "")
+	aoe_type = turret_data.get("aoe_type", "none")
+	special_mechanics = turret_data.get("special_mechanics", [])
+	
+	if turret_data.has("stats"):
+		for stat in turret_data["stats"].keys():
+			if has_method("set") and stat in self:
+				set(stat, turret_data["stats"][stat])
+
+func _handle_placement_collision() -> void:
+	var collision_area = get_node_or_null("CollisionArea")
+	if not collision_area:
+		return
+	
+	if collision_area.has_overlapping_areas():
+		colliding()
+	else:
+		not_colliding()
+
+func _handle_target_rotation() -> void:
+	if is_instance_valid(current_target):
+		look_at(current_target.global_position)
+	else:
 		try_get_closest_target()
 
 func try_get_closest_target():
 	if not deployed:
 		return
-	var closest = 1000
+	
+	var detection_area = get_node_or_null("DetectionArea")
+	if not detection_area:
+		return
+	
+	var closest = 1000.0
 	var closest_area = null
-	for area in $DetectionArea.get_overlapping_areas():
-		var dist = area.position.distance_to(position)
+	for area in detection_area.get_overlapping_areas():
+		if not is_instance_valid(area):
+			continue
+		var dist = area.global_position.distance_to(global_position)
 		if dist < closest:
 			closest = dist
 			closest_area = area
-	if closest_area:
-		current_target = closest_area.get_parent()
+	
+	if closest_area and is_instance_valid(closest_area):
+		var parent = closest_area.get_parent()
+		if is_instance_valid(parent):
+			current_target = parent
 
-func open_details_pane():
-	if not Globals or not Globals.hud:
+func open_details_pane() -> void:
+	if not is_instance_valid(Globals) or not is_instance_valid(Globals.hud):
+		push_warning("Cannot open details pane: Globals or HUD not available")
 		return
-		
-	var turretDetailsScene := preload("res://Scenes/ui/turretUI/turret_details.tscn")
-	var details := turretDetailsScene.instantiate()
+	
+	var details_path = Data.get_path("scenes", "ui", "turret_details")
+	if details_path == "":
+		return
+	
+	var turret_details_scene = Data.load_resource_safe(details_path, "PackedScene")
+	if not turret_details_scene:
+		push_error("Failed to load turret details scene")
+		return
+	
+	var details = turret_details_scene.instantiate()
+	if not details:
+		push_error("Failed to instantiate turret details")
+		return
+	
 	details.turret = self
 	draw_range = true
 	queue_redraw()
 	Globals.hud.add_child(details)
 	Globals.hud.open_details_pane = details
 
-func close_details_pane():
+func close_details_pane() -> void:
 	draw_range = false
 	queue_redraw()
-	if Globals and Globals.hud and is_instance_valid(Globals.hud.open_details_pane):
+	
+	if not is_instance_valid(Globals) or not is_instance_valid(Globals.hud):
+		return
+	
+	if is_instance_valid(Globals.hud.open_details_pane):
 		Globals.hud.open_details_pane.queue_free()
 		Globals.hud.open_details_pane = null
 
-func _on_collision_area_input_event(_viewport, _event, _shape_idx):
-	if deployed and Input.is_action_just_pressed("LeftClick"):
-		if Globals and Globals.hud and is_instance_valid(Globals.hud.open_details_pane):
-			if Globals.hud.open_details_pane.turret == self:
-				close_details_pane()
-				return
-			Globals.hud.open_details_pane.turret.close_details_pane()
-		open_details_pane()
+func _on_collision_area_input_event(_viewport: Viewport, _event: InputEvent, _shape_idx: int) -> void:
+	if not deployed or not Input.is_action_just_pressed("LeftClick"):
+		return
+	
+	if is_instance_valid(Globals) and is_instance_valid(Globals.hud) and is_instance_valid(Globals.hud.open_details_pane):
+		if Globals.hud.open_details_pane.turret == self:
+			close_details_pane()
+			return
+		Globals.hud.open_details_pane.turret.close_details_pane()
+	
+	open_details_pane()
 
-func upgrade_turret():
+func upgrade_turret() -> void:
+	if not Data.turrets.has(turret_type):
+		push_error("Cannot upgrade: turret type '" + turret_type + "' not found")
+		return
+	
+	var turret_data = Data.turrets[turret_type]
+	if not turret_data.has("upgrades"):
+		push_warning("No upgrades available for turret type: " + turret_type)
+		return
+	
 	turret_level += 1
-	for upgrade in Data.turrets[turret_type]["upgrades"].keys():
-		if Data.turrets[turret_type]["upgrades"][upgrade]["multiplies"]:
-			set(upgrade, get(upgrade) * Data.turrets[turret_type]["upgrades"][upgrade]["amount"])
+	var upgrades = turret_data["upgrades"]
+	
+	for upgrade in upgrades.keys():
+		if not upgrade in self:
+			continue
+		
+		var upgrade_data = upgrades[upgrade]
+		var current_value = get(upgrade)
+		var amount = upgrade_data.get("amount", 1.0)
+		var multiplies = upgrade_data.get("multiplies", false)
+		
+		if multiplies:
+			set(upgrade, current_value * amount)
 		else:
-			set(upgrade, get(upgrade) + Data.turrets[turret_type]["upgrades"][upgrade]["amount"])
+			set(upgrade, current_value + amount)
+	
 	turretUpdated.emit()
 
-func attack():
+func attack() -> void:
 	if is_instance_valid(current_target):
 		# For non-projectile towers, directly call charge system when attacking
 		if turret_category != "projectile":
-			var charge_system = get_charge_system()
-			if charge_system and has_charge_ability():
-				charge_system.add_charge_on_hit(self)
+			var charge_system_node = get_charge_system()
+			if is_instance_valid(charge_system_node) and has_charge_ability():
+				if charge_system_node.has_method("add_charge_on_hit"):
+					charge_system_node.add_charge_on_hit(self)
 	else:
 		try_get_closest_target()
 
 func get_charge_system() -> ChargeSystem:
 	var tree = get_tree()
-	if tree and tree.current_scene:
-		return tree.current_scene.get_node_or_null("ChargeSystem") as ChargeSystem
+	if not tree or not is_instance_valid(tree.current_scene):
+		return null
+	
+	var charge_node = tree.current_scene.get_node_or_null("ChargeSystem")
+	if charge_node and charge_node is ChargeSystem:
+		return charge_node as ChargeSystem
 	return null
 
 ## Calculate number of attacks based on DA/TA probability
