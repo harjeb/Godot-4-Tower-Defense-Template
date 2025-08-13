@@ -21,6 +21,10 @@
       "Bash(cp:*)",
       "Bash(-exec head -n 500 {})",
       "Bash(claude mcp)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rm:*)",
+      "Bash(git rebase:*)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs"
     ],
