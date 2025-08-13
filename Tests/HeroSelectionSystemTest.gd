@@ -440,7 +440,7 @@ func test_signal_handling():
 
 func generate_test_hero_pool() -> Array[String]:
 	"""Generate a test hero pool for selection"""
-	var all_heroes = Data.heroes.keys()
+	var all_heroes = Data.heroes.keys() as Array[String]
 	var pool = []
 	
 	# If we have less than 5 heroes, duplicate some for testing
