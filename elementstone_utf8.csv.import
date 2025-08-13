@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cuqsk4rptkueg"
+
+[deps]
+
+files=["res://elementstone_utf8. 火焰宝石 1级 .translation", "res://elementstone_utf8. 炽热之心  2级.translation", "res://elementstone_utf8.炎狱之魂  3级.translation", "res://elementstone_utf8.冰霜宝石.translation", "res://elementstone_utf8. 寒冰之心.translation", "res://elementstone_utf8.极夜之魂.translation"]
+
+source_file="res://elementstone_utf8.csv"
+dest_files=["res://elementstone_utf8. 火焰宝石 1级 .translation", "res://elementstone_utf8. 炽热之心  2级.translation", "res://elementstone_utf8.炎狱之魂  3级.translation", "res://elementstone_utf8.冰霜宝石.translation", "res://elementstone_utf8. 寒冰之心.translation", "res://elementstone_utf8.极夜之魂.translation"]
+
+[params]
+
+compress=true
+delimiter=0

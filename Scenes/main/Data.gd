@@ -55,7 +55,7 @@ static func load_resource_safe(path: String, expected_type: String = "") -> Reso
 	return resource
 
 ## Get path from PATHS dictionary with error checking
-static func get_path(category: String, subcategory: String, item: String) -> String:
+static func get_resource_path(category: String, subcategory: String, item: String) -> String:
 	if not PATHS.has(category):
 		push_error("Path category not found: " + category)
 		return ""
@@ -2536,25 +2536,7 @@ const effects := {
 		"duration": 1.0
 	},
 	
-	# 风系效果 - 防御降低
-	"defense_reduction_5": {
-		"type": "stat_modifier",
-		"stat": "defense",
-		"operation": "multiply",
-		"value": 0.95
-	},
-	"defense_reduction_10": {
-		"type": "stat_modifier",
-		"stat": "defense",
-		"operation": "multiply",
-		"value": 0.90
-	},
-	"defense_reduction_15": {
-		"type": "stat_modifier",
-		"stat": "defense",
-		"operation": "multiply",
-		"value": 0.85
-	},
+	# 风系效果 - 防御降低（已在前面定义，这里删除重复）
 	
 	# 风系特殊效果
 	"multi_wind_blades": {
@@ -2610,12 +2592,7 @@ const effects := {
 		"bonus": 0.12,
 		"range": 150.0
 	},
-	"attack_speed_reduction_10": {
-		"type": "stat_modifier",
-		"stat": "attack_speed",
-		"operation": "multiply",
-		"value": 0.90
-	},
+	# attack_speed_reduction_10 已在前面定义，删除重复
 	"da_chance_5": {
 		"type": "stat_modifier",
 		"stat": "da_bonus",

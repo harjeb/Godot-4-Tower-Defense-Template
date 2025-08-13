@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://bbaoplh7ublfx"
+
+[deps]
+
+files=["res://elementstone_iso. ��汦ʯ 1�� .translation", "res://elementstone_iso. �����  2��.translation", "res://elementstone_iso.��֮�� 3��.translation", "res://elementstone_iso.�����ʯ.translation", "res://elementstone_iso. ������.translation", "res://elementstone_iso.��ҹ֮� .translation"]
+
+source_file="res://elementstone_iso.csv"
+dest_files=["res://elementstone_iso. ��汦ʯ 1�� .translation", "res://elementstone_iso. �����  2��.translation", "res://elementstone_iso.��֮�� 3��.translation", "res://elementstone_iso.�����ʯ.translation", "res://elementstone_iso. ������.translation", "res://elementstone_iso.��ҹ֮� .translation"]
+
+[params]
+
+compress=true
+delimiter=0

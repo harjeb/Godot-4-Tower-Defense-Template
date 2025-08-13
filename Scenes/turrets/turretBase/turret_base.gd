@@ -91,6 +91,14 @@ func set_placeholder():
 func build():
 	deployed = true
 	modulate = Color.WHITE
+	
+	# Add to tower group
+	add_to_group("tower")
+	
+	# Setup blocking collision for melee towers
+	if can_block_path:
+		setup_blocking_collision()
+	
 	# Apply passive bonuses when tower is built
 	call_deferred("apply_passive_bonuses")
 
@@ -227,7 +235,7 @@ func open_details_pane() -> void:
 		push_warning("Cannot open details pane: Globals or HUD not available")
 		return
 	
-	var details_path = Data.get_path("scenes", "ui", "turret_details")
+	var details_path = Data.get_resource_path("scenes", "ui", "turret_details")
 	if details_path == "":
 		return
 	
@@ -2110,20 +2118,6 @@ func _on_respawn_timer_timeout() -> void:
 	
 	print("Blocking tower respawned!")
 
-# Override build method to setup blocking collision
-func build():
-	deployed = true
-	modulate = Color.WHITE
-	
-	# Add to tower group
-	add_to_group("tower")
-	
-	# Setup blocking collision for melee towers
-	if can_block_path:
-		setup_blocking_collision()
-	
-	# Apply passive bonuses when tower is built
-	call_deferred("apply_passive_bonuses")
 
 # Shadow Effect Setup Methods
 
@@ -2287,4 +2281,3 @@ func apply_life_drain_effect_to_target(target: Node, drain_percent: float):
 func apply_no_healing_to_target(target: Node):
 	if target and target.has_method("set_no_healing"):
 		target.set_no_healing(true, no_healing_duration)
-EOF < /dev/null
