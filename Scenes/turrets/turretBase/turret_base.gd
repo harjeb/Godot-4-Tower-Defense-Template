@@ -10,6 +10,30 @@ var element: String = "neutral"
 var equipped_gem: Dictionary = {}
 var turret_category: String = ""
 
+# Combat Range Type System
+enum CombatType {
+	MELEE,    # 近战塔：只能攻击相邻敌人，可以阻挡道路
+	RANGED    # 远程塔：远距离攻击，不能阻挡道路
+}
+var combat_type: CombatType = CombatType.RANGED
+var can_block_path: bool = false  # 是否可以阻挡道路
+var is_blocking: bool = false     # 当前是否在阻挡状态
+
+# Target Type System
+enum TargetType {
+	GROUND_ONLY,  # 只能攻击地面单位
+	AIR_ONLY,     # 只能攻击飞行单位  
+	BOTH          # 可以攻击所有单位
+}
+var target_type: TargetType = TargetType.BOTH
+
+# Health System for Blocking Towers
+var max_health: float = 100.0
+var current_health: float = 100.0
+var is_alive: bool = true
+var respawn_time: float = 5.0
+var blocking_collision: StaticBody2D
+
 # DA/TA System Properties
 var da_bonus: float = 0.05  # 5% base DA chance
 var ta_bonus: float = 0.01  # 1% base TA chance
@@ -79,11 +103,15 @@ func not_colliding():
 	modulate = Color("6eff297a")
 
 func _on_detection_area_area_entered(area: Area2D) -> void:
-	if not deployed or current_target or not is_instance_valid(area):
+	if not deployed or current_target or not is_instance_valid(area) or not is_alive:
 		return
 	
 	var area_parent = area.get_parent()
 	if not is_instance_valid(area_parent) or not area_parent.is_in_group("enemy"):
+		return
+	
+	# Check if this tower can target this enemy type
+	if not can_target_enemy(area_parent):
 		return
 	
 	# Check stealth logic
@@ -124,6 +152,26 @@ func _setup_turret_data(value: String) -> void:
 	rotates = turret_data.get("rotates", false)
 	element = turret_data.get("element", "neutral")
 	turret_category = turret_data.get("turret_category", "")
+	
+	# Setup combat type and target type
+	var combat_type_str = turret_data.get("combat_type", "ranged")
+	combat_type = CombatType.RANGED if combat_type_str == "ranged" else CombatType.MELEE
+	can_block_path = combat_type == CombatType.MELEE
+	
+	var target_type_str = turret_data.get("target_type", "both")
+	match target_type_str:
+		"ground_only":
+			target_type = TargetType.GROUND_ONLY
+		"air_only":
+			target_type = TargetType.AIR_ONLY
+		_:
+			target_type = TargetType.BOTH
+	
+	# Health system for blocking towers
+	max_health = turret_data.get("max_health", 100.0)
+	current_health = max_health
+	respawn_time = turret_data.get("respawn_time", 5.0)
+	
 	da_bonus = turret_data.get("da_bonus", 0.05)
 	ta_bonus = turret_data.get("ta_bonus", 0.01)
 	passive_effect = turret_data.get("passive_effect", "")
@@ -394,8 +442,26 @@ func calculate_final_damage(base_damage: float, target_element: String) -> float
 	# 应用属性克制 (乘算)
 	var effectiveness = ElementSystem.get_effectiveness_multiplier(element, target_element)
 	
+	# 冰元素特殊处理：检查目标是否有冰霜减益
+	if element == "ice" and current_target and is_instance_valid(current_target):
+		var gem_effect_system = get_gem_effect_system()
+		if gem_effect_system:
+			var frost_stacks = gem_effect_system.get_frost_stacks(current_target)
+			if frost_stacks > 0:
+				# 冰霜层数增加伤害 (每层2%)
+				element_buff_multiplier += frost_stacks * 0.02
+	
 	# 最终计算：基础伤害 × 炮塔类型BUFF × 元素BUFF × 属性克制
 	final_damage = base_damage * turret_buff_multiplier * element_buff_multiplier * effectiveness
+	
+	# 检查是否有对冻结单位的伤害倍率加成
+	if element == "ice" and current_target and is_instance_valid(current_target):
+		var gem_effect_system = get_gem_effect_system()
+		if gem_effect_system and gem_effect_system.is_target_frozen(current_target):
+			# 检查是否有冻结伤害倍率效果
+			var active_effects = get_active_gem_effects()
+			if "frozen_damage_3x" in active_effects:
+				final_damage *= 3.0
 	
 	return final_damage
 
@@ -512,7 +578,19 @@ func _get_tower_type_key() -> String:
 	# 根据塔类型返回对应的key
 	match turret_category:
 		"projectile":
-			return "arrow_tower"
+			# 检查具体的炮塔类型
+			if "箭塔" in turret_type or "arrow" in turret_type:
+				return "arrow_tower"
+			elif "捕获" in turret_type or "capture" in turret_type:
+				return "capture_tower"
+			elif "法师" in turret_type or "mage" in turret_type:
+				return "mage_tower"
+			elif "弹射" in turret_type or "ricochet" in turret_type or "bounce" in turret_type:
+				return "弹射塔"
+			elif "虚弱" in turret_type or "weakness" in turret_type:
+				return "weakness_tower"
+			else:
+				return "arrow_tower"  # 默认
 		"melee":
 			return "capture_tower"
 		"ray":
@@ -525,11 +603,26 @@ func _get_tower_type_key() -> String:
 			return "aura_tower"
 		"weakness":
 			return "weakness_tower"
+		"support":
+			# 特殊塔类型处理
+			if "感应" in turret_type or "detection" in turret_type:
+				return "感应塔"
+			elif "光环" in turret_type or "aura" in turret_type:
+				return "aura_tower"
+			else:
+				return "感应塔"
+		"special":
+			if "末日" in turret_type or "doomsday" in turret_type:
+				return "末日塔"
+			elif "脉冲" in turret_type or "pulse" in turret_type:
+				return "pulse_tower"
+			else:
+				return "末日塔"
 		_:
 			# 特殊塔类型处理
-			if "感应" in turret_type:
+			if "感应" in turret_type or "detection" in turret_type:
 				return "感应塔"
-			elif "末日" in turret_type:
+			elif "末日" in turret_type or "doomsday" in turret_type:
 				return "末日塔"
 			else:
 				return ""
@@ -640,6 +733,290 @@ func _apply_special_effect(effect_data: Dictionary):
 		"carbonization_field":
 			# 炭化领域效果（用于捕获塔）
 			_setup_carbonization_field_effect(effect_data)
+		# 冰元素特殊效果
+		"frost_area":
+			# 冰霜区域效果（用于脉冲塔）
+			_setup_frost_area_effect(effect_data)
+		"frost_on_bounce":
+			# 弹射冰霜效果（用于弹射塔）
+			_setup_frost_bounce_effect(effect_data)
+		"aura_slow":
+			# 冰霜光环效果（用于光环塔）
+			_setup_frost_aura_effect(effect_data)
+		"chance_freeze":
+			# 概率冻结效果
+			_setup_chance_freeze_effect(effect_data)
+		"chance_freeze_bounce":
+			# 弹射概率冻结效果
+			_setup_chance_freeze_bounce_effect(effect_data)
+		"freeze_main_target":
+			# 主目标冻结效果（用于法师塔）
+			_setup_freeze_main_target_effect(effect_data)
+		"freeze_on_effect_end":
+			# 效果结束时冻结（用于捕获塔、末日塔）
+			_setup_freeze_on_end_effect(effect_data)
+		"freeze_stealth_units":
+			# 冻结隐身单位（用于感应塔）
+			_setup_freeze_stealth_effect(effect_data)
+		"freeze_on_death":
+			# 死亡时冻结（用于末日塔）
+			_setup_freeze_on_death_effect()
+		"frost_ground":
+			# 冰霜地面效果（用于脉冲塔）
+			_setup_frost_ground_effect(effect_data)
+		"frozen_damage_multiplier":
+			# 对冻结单位伤害倍率（用于脉冲塔）
+			_setup_frozen_damage_multiplier_effect(effect_data)
+		"freeze_duration_bonus":
+			# 冻结时间加成（用于光环塔）
+			_setup_freeze_duration_bonus_effect(effect_data)
+		"periodic_frost":
+			# 周期性冰霜效果（用于光环塔）
+			_setup_periodic_frost_effect(effect_data)
+		"priority_targeting":
+			# 优先目标效果（用于感应塔）
+			_setup_priority_target_effect()
+		"stealth_slow":
+			# 隐身单位减速（用于感应塔）
+			_setup_stealth_slow_effect(effect_data)
+		"capture_slow_bonus":
+			# 捕获减速加成（用于捕获塔）
+			_setup_capture_slow_bonus_effect(effect_data)
+		"frost_debuff_area":
+			# 区域冰霜减益（用于法师塔）
+			_setup_frost_debuff_area_effect(effect_data)
+		# 土元素特殊效果
+		"weight_area":
+			# 重压区域效果（用于脉冲塔）
+			_setup_weight_area_effect(effect_data)
+		"armor_break_on_bounce":
+			# 破甲弹射效果（用于弹射塔）
+			_setup_armor_break_on_bounce_effect(effect_data)
+		"meteor":
+			# 陨石攻击效果（用于法师塔）
+			_setup_meteor_attack_effect(effect_data)
+		"triple_meteor":
+			# 三重陨石效果（用于法师塔）
+			_setup_triple_meteor_effect(effect_data)
+		"aoe":
+			# 范围攻击效果（用于箭塔）
+			_setup_aoe_attack_effect(effect_data)
+		"thorns":
+			# 反伤效果（用于光环塔）
+			_setup_thorns_effect(effect_data)
+		"chance_petrify":
+			# 概率石化效果
+			_setup_chance_petrify_effect(effect_data)
+		"continuous_defense_reduction":
+			# 持续防御力降低效果（用于末日塔）
+			_setup_continuous_defense_reduction_effect(effect_data)
+		"max_hp_damage":
+			# 最大生命值百分比伤害效果（用于末日塔）
+			_setup_max_hp_damage_effect(effect_data)
+		"aftershock":
+			# 余震效果（用于脉冲塔）
+			_setup_aftershock_effect(effect_data)
+		"tower_shield":
+			# 护盾效果（用于脉冲塔）
+			_setup_tower_shield_effect(effect_data)
+		"weight_area_all_ground":
+			# 所有地面单位重压效果（用于感应塔）
+			_setup_weight_all_ground_effect(effect_data)
+		"infinite_duration":
+			# 无限持续时间（用于末日塔）
+			_setup_infinite_duration_effect()
+		"petrify_obelisk_on_death":
+			# 死亡时石化方尖塔效果（用于末日塔）
+			_setup_petrify_obelisk_on_death_effect()
+		"petrify_chance_bounce":
+			# 弹射概率石化效果（用于弹射塔）
+			_setup_petrify_chance_bounce_effect(effect_data)
+		"refresh_on_petrify":
+			# 石化时刷新效果（用于弹射塔）
+			_setup_refresh_on_petrify_effect()
+		"extra_targets":
+			# 额外目标效果（用于弹射塔）
+			_setup_extra_targets_effect(effect_data)
+		"immune_armor_break":
+			# 免疫破甲效果（用于光环塔）
+			_setup_immune_armor_break_effect()
+		"permanent_weight_field":
+			# 永久重压领域效果（用于捕获塔）
+			_setup_permanent_weight_field_effect(effect_data)
+		"petrify_on_move":
+			# 移动时石化效果（用于感应塔）
+			_setup_petrify_on_move_effect(effect_data)
+		# 风元素效果
+		"attack_speed_boost":
+			# 攻击速度提升效果
+			_setup_attack_speed_boost_effect(effect_data)
+		"knockback":
+			# 击退效果
+			_setup_knockback_target_effect(effect_data)
+		"knockback_all":
+			# 范围击退效果
+			_setup_knockback_all_effect(effect_data)
+		"imbalance_area":
+			# 失衡区域效果
+			_setup_imbalance_area_effect(effect_data)
+		"imbalance_stealth":
+			# 失衡隐身单位效果
+			_setup_imbalance_stealth_effect(effect_data)
+		"silence":
+			# 沉默效果
+			_setup_silence_target_effect(effect_data)
+		"silence_stealth":
+			# 沉默隐身单位效果
+			_setup_silence_stealth_effect(effect_data)
+		"silence_chance":
+			# 概率沉默效果
+			_setup_silence_chance_effect(effect_data)
+		"multi_wind_blades":
+			# 多重风刃效果
+			_setup_multi_wind_blades_effect(effect_data)
+		"capture_range":
+			# 捕获范围提升效果
+			_setup_capture_range_effect(effect_data)
+		"pull_to_center":
+			# 拉向中心效果
+			_setup_pull_to_center_effect(effect_data)
+		"wind_blades_bounce":
+			# 风刃弹射效果
+			_setup_wind_blades_bounce_effect(effect_data)
+		"reveal_nearby":
+			# 显现周围敌人效果
+			_setup_reveal_nearby_effect(effect_data)
+		"dodge_chance":
+			# 闪避几率效果
+			_setup_dodge_chance_effect(effect_data)
+		"ricochet_count":
+			# 弹射次数效果
+			_setup_ricochet_count_effect(effect_data)
+		"attack_speed_aura":
+			# 攻击速度光环效果
+			_setup_attack_speed_aura_effect(effect_data)
+		"fast_ricochet":
+			# 快速弹射效果
+			_setup_fast_ricochet_effect(effect_data)
+		"piercing":
+			# 穿透攻击效果
+			_setup_piercing_attack_effect(effect_data)
+		"chain_targets":
+			# 多目标攻击效果
+			_setup_multi_target_effect(effect_data)
+		"tornado":
+			# 龙卷风效果
+			_setup_tornado_effect(effect_data)
+		"imprison":
+			# 禁锢敌人效果
+			_setup_imprison_enemies_effect(effect_data)
+		"knockback_on_end":
+			# 结束时击退效果
+			_setup_knockback_on_end_effect(effect_data)
+		"hurricane":
+			# 飓风效果
+			_setup_hurricane_effect(effect_data)
+		"flying_debuff":
+			# 飞行单位减益效果
+			_setup_flying_debuff_effect(effect_data)
+		"exile":
+			# 放逐效果
+			_setup_exile_effect(effect_data)
+		"damage_on_return":
+			# 回归时伤害效果
+			_setup_damage_on_return_effect(effect_data)
+		"ally_attack_speed":
+			# 友方攻击速度效果
+			_setup_ally_attack_speed_effect(effect_data)
+		"bonus_damage_on_end":
+			# 结束时额外伤害效果
+			_setup_bonus_damage_on_end_effect(effect_data)
+		# 光元素特殊效果
+		"blind":
+			# 致盲效果
+			_setup_blind_effect(effect_data)
+		"purify":
+			# 净化效果
+			_setup_purify_effect(effect_data)
+		"judgment":
+			# 审判效果
+			_setup_judgment_effect(effect_data)
+		"holy_damage":
+			# 神圣伤害效果
+			_setup_holy_damage_effect(effect_data)
+		"heal_towers":
+			# 治疗友方塔效果
+			_setup_heal_towers_effect(effect_data)
+		"energy_return":
+			# 能量返还效果
+			_setup_energy_return_effect(effect_data)
+		"anti_stealth":
+			# 反隐身效果
+			_setup_anti_stealth_effect(effect_data)
+		"judgment_spread":
+			# 审判扩散效果
+			_setup_judgment_spread_effect(effect_data)
+		# 暗元素特殊效果
+		"corrosion":
+			# 腐蚀效果
+			_setup_corrosion_effect(effect_data)
+		"life_steal":
+			# 生命偷取效果
+			_setup_life_steal_effect(effect_data)
+		"healing_reduction":
+			# 治疗效果降低
+			_setup_healing_reduction_effect(effect_data)
+		"death_contagion":
+			# 死亡传染效果
+			_setup_death_contagion_effect(effect_data)
+		"chance_fear":
+			# 概率恐惧效果
+			_setup_chance_fear_effect(effect_data)
+		"fear_area":
+			# 恐惧区域效果
+			_setup_fear_area_effect(effect_data)
+		"no_healing":
+			# 无法治疗效果
+			_setup_no_healing_effect(effect_data)
+		"channel_life_drain":
+			# 引导生命虹吸效果
+			_setup_channel_life_drain_effect(effect_data)
+		"fear_area_detection":
+			# 恐惧侦测效果
+			_setup_fear_area_detection_effect(effect_data)
+		"global_life_steal":
+			# 全局生命偷取效果
+			_setup_global_life_steal_effect(effect_data)
+		"corrosion_aura":
+			# 腐蚀光环效果
+			_setup_corrosion_aura_effect(effect_data)
+		"life_drain_aura":
+			# 生命虹吸光环效果
+			_setup_life_drain_aura_effect(effect_data)
+		"permanent_stat_steal":
+			# 永久属性偷取效果
+			_setup_permanent_stat_steal_effect(effect_data)
+		"area_life_steal":
+			# 范围生命偷取效果
+			_setup_area_life_steal_effect(effect_data)
+		"life_cost":
+			# 生命消耗效果
+			_setup_life_cost_effect(effect_data)
+		"damage_multiplier":
+			# 伤害倍率效果
+			_setup_damage_multiplier_effect(effect_data)
+		"fear_on_hit":
+			# 攻击恐惧效果
+			_setup_fear_on_hit_effect(effect_data)
+		"stealth_life_drain":
+			# 隐身生命虹吸效果
+			_setup_stealth_life_drain_effect(effect_data)
+		"stat_steal_on_death":
+			# 死亡属性偷取效果
+			_setup_stat_steal_on_death_effect(effect_data)
+		"targeting_priority":
+			# 目标优先级效果
+			_setup_targeting_priority_effect(effect_data)
 
 # 特殊效果设置方法（占位符，具体实现需要根据塔类型）
 func _setup_area_burn_effect():
@@ -672,6 +1049,922 @@ func _setup_death_explosion_effect():
 func _setup_carbonization_field_effect(effect_data: Dictionary):
 	pass
 
+# 冰元素效果实现方法
+func _setup_frost_area_effect(effect_data: Dictionary):
+	# 脉冲塔冰霜脉冲效果
+	var stacks = effect_data.get("stacks", 1)
+	var radius = effect_data.get("radius", 85.0)
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		# 连接攻击信号以应用冰霜区域效果
+		if not attack_hit.is_connected(_on_frost_area_attack):
+			attack_hit.connect(_on_frost_area_attack.bind(stacks, radius))
+
+func _on_frost_area_attack(target: Node, stacks: int, radius: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_frost_area_effect(global_position, radius, stacks)
+
+func _setup_frost_bounce_effect(effect_data: Dictionary):
+	# 弹射塔冰片弹射效果
+	var stacks = effect_data.get("stacks", 1)
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		# 连接弹射信号以应用冰霜效果
+		if not projectile_bounce.is_connected(_on_frost_bounce):
+			projectile_bounce.connect(_on_frost_bounce.bind(stacks))
+
+func _on_frost_bounce(target: Node, stacks: int):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system and target.has_method("set_frost_stacks"):
+		target.set_frost_stacks(stacks)
+
+func _setup_frost_aura_effect(effect_data: Dictionary):
+	# 光环塔寒冰光环效果
+	var slow_amount = effect_data.get("slow_amount", 0.05)
+	var radius = effect_data.get("radius", 150.0)
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		# 启动光环定时器
+		_start_frost_aura_timer(slow_amount, radius)
+
+func _start_frost_aura_timer(slow_amount: float, radius: float):
+	var timer = Timer.new()
+	timer.name = "FrostAuraTimer"
+	timer.wait_time = 1.0  # 每秒应用一次
+	timer.autostart = true
+	timer.timeout.connect(_on_frost_aura_tick.bind(slow_amount, radius))
+	add_child(timer)
+
+func _on_frost_aura_tick(slow_amount: float, radius: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_frost_aura_effect(global_position, radius, slow_amount)
+
+func _setup_chance_freeze_effect(effect_data: Dictionary):
+	# 概率冻结效果
+	var chance = effect_data.get("chance", 0.15)
+	var duration = effect_data.get("duration", 1.0)
+	# 在攻击时应用概率冻结
+	pass
+
+func _setup_chance_freeze_bounce_effect(effect_data: Dictionary):
+	# 弹射概率冻结效果
+	var chance = effect_data.get("chance", 0.20)
+	var duration = effect_data.get("duration", 0.5)
+	# 在弹射时应用概率冻结
+	pass
+
+func _setup_freeze_main_target_effect(effect_data: Dictionary):
+	# 法师塔冰川尖刺主目标冻结
+	var duration = effect_data.get("duration", 2.0)
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		# 连接攻击信号以冻结主目标
+		if not attack_hit.is_connected(_on_freeze_main_target):
+			attack_hit.connect(_on_freeze_main_target.bind(duration))
+
+func _on_freeze_main_target(target: Node, duration: float):
+	if target.has_method("set_frozen"):
+		target.set_frozen(true, duration)
+
+func _setup_freeze_on_end_effect(effect_data: Dictionary):
+	# 捕获塔、末日塔效果结束时冻结
+	var duration = effect_data.get("duration", 1.5)
+	# 在效果结束时应用冻结
+	pass
+
+func _setup_freeze_stealth_effect(effect_data: Dictionary):
+	# 感应塔冻结隐身单位
+	var duration = effect_data.get("duration", 1.0)
+	# 对隐身单位应用冻结
+	pass
+
+func _setup_freeze_on_death_effect():
+	# 末日塔死亡时冻结周围敌人
+	# 在单位死亡时触发范围冻结
+	pass
+
+func _setup_frost_ground_effect(effect_data: Dictionary):
+	# 脉冲塔极寒风暴冰霜地面
+	var duration = effect_data.get("duration", 3.0)
+	# 创建冰霜地面区域效果
+	pass
+
+func _setup_frozen_damage_multiplier_effect(effect_data: Dictionary):
+	# 对冻结单位伤害倍率
+	var multiplier = effect_data.get("multiplier", 3.0)
+	# 设置对冻结单位的伤害倍率
+	pass
+
+func _setup_freeze_duration_bonus_effect(effect_data: Dictionary):
+	# 冻结时间加成
+	var bonus = effect_data.get("bonus", 0.20)
+	# 增加冻结效果持续时间
+	pass
+
+func _setup_periodic_frost_effect(effect_data: Dictionary):
+	# 周期性冰霜效果
+	var interval = effect_data.get("interval", 2.0)
+	# 定期应用冰霜效果
+	pass
+
+func _setup_priority_target_effect():
+	# 感应塔优先目标效果
+	# 标记目标为优先攻击目标
+	pass
+
+func _setup_stealth_slow_effect(effect_data: Dictionary):
+	# 感应塔隐身单位减速
+	var slow_amount = effect_data.get("slow_amount", 0.20)
+	# 对隐身单位应用额外减速
+	pass
+
+func _setup_capture_slow_bonus_effect(effect_data: Dictionary):
+	# 捕获塔减速加成
+	var slow_multiplier = effect_data.get("slow_multiplier", 1.0)
+	var duration_bonus = effect_data.get("duration_bonus", 0.5)
+	# 增强捕获减速效果
+	pass
+
+func _setup_frost_debuff_area_effect(effect_data: Dictionary):
+	# 法师塔区域冰霜减益
+	var stacks = effect_data.get("stacks", 2)
+	# 在攻击范围内应用冰霜减益
+	pass
+
+# 土元素效果实现方法
+func _setup_weight_area_effect(effect_data: Dictionary):
+	# 脉冲塔地震波重压区域效果
+	var stacks = effect_data.get("stacks", 1)
+	var radius = effect_data.get("radius", 85.0)
+	# 连接攻击信号以应用重压区域效果
+	if not attack_hit.is_connected(_on_weight_area_attack):
+		attack_hit.connect(_on_weight_area_attack.bind(stacks, radius))
+
+func _on_weight_area_attack(target: Node, stacks: int, radius: float):
+	apply_weight_area_effect(global_position, radius, stacks)
+
+func _setup_armor_break_on_bounce_effect(effect_data: Dictionary):
+	# 弹射塔碎石弹破甲效果
+	var stacks = effect_data.get("stacks", 1)
+	# 连接弹射信号以应用破甲效果
+	if not projectile_bounce.is_connected(_on_armor_break_bounce):
+		projectile_bounce.connect(_on_armor_break_bounce.bind(stacks))
+
+func _on_armor_break_bounce(target: Node, stacks: int):
+	apply_armor_break_on_bounce_effect(target, stacks)
+
+func _setup_meteor_attack_effect(effect_data: Dictionary):
+	# 法师塔陨石术效果
+	# 修改攻击为范围陨石攻击
+	var damage_boost = effect_data.get("damage_boost", 0.30)
+	damage *= (1.0 + damage_boost)
+	# 设置AOE范围
+	aoe_type = "circle"
+
+func _setup_triple_meteor_effect(effect_data: Dictionary):
+	# 法师塔泰坦之怒三重陨石效果
+	# 连续发射3颗陨石
+	var damage_boost = effect_data.get("damage_boost", 0.50)
+	damage *= (1.0 + damage_boost)
+	# 设置多重攻击
+	if has_method("set_multi_shot"):
+		call("set_multi_shot", 3)
+
+func _setup_aoe_attack_effect(effect_data: Dictionary):
+	# 箭塔地龙击范围攻击效果
+	# 修改攻击为范围攻击
+	aoe_type = "circle"
+
+func _setup_thorns_effect(effect_data: Dictionary):
+	# 光环塔反伤效果
+	var percentage = effect_data.get("percentage", 0.05)
+	# 设置反伤百分比
+	if has_method("set_thorns_percentage"):
+		call("set_thorns_percentage", percentage)
+
+func _setup_chance_petrify_effect(effect_data: Dictionary):
+	# 概率石化效果
+	var chance = effect_data.get("chance", 0.20)
+	var duration = effect_data.get("duration", 1.0)
+	# 在攻击时应用概率石化
+	if not attack_hit.is_connected(_on_chance_petrify_attack):
+		attack_hit.connect(_on_chance_petrify_attack.bind(chance, duration))
+
+func _on_chance_petrify_attack(target: Node, chance: float, duration: float):
+	apply_chance_petrify_effect(target, chance, duration)
+
+func _setup_continuous_defense_reduction_effect(effect_data: Dictionary):
+	# 末日塔石化凝视持续防御力降低效果
+	var max_reduction = effect_data.get("max_reduction", 0.30)
+	# 设置持续防御力降低
+	if has_method("set_continuous_defense_reduction"):
+		call("set_continuous_defense_reduction", max_reduction)
+
+func _setup_max_hp_damage_effect(effect_data: Dictionary):
+	# 末日塔地心熔毁最大生命值百分比伤害效果
+	var percentage = effect_data.get("percentage", 0.01)
+	# 设置最大生命值百分比伤害
+	if not attack_hit.is_connected(_on_max_hp_damage_attack):
+		attack_hit.connect(_on_max_hp_damage_attack.bind(percentage))
+
+func _on_max_hp_damage_attack(target: Node, percentage: float):
+	apply_max_hp_damage_effect(target, percentage)
+
+func _setup_aftershock_effect(effect_data: Dictionary):
+	# 脉冲塔余震效果
+	var chance = effect_data.get("chance", 0.25)
+	var damage_multiplier = effect_data.get("damage_multiplier", 0.5)
+	# 设置余震几率和伤害倍率
+	if not attack_hit.is_connected(_on_aftershock_attack):
+		attack_hit.connect(_on_aftershock_attack.bind(chance, damage_multiplier))
+
+func _on_aftershock_attack(target: Node, chance: float, damage_multiplier: float):
+	if randf() < chance:
+		apply_aftershock_effect(global_position, 50.0, damage_multiplier)
+
+func _setup_tower_shield_effect(effect_data: Dictionary):
+	# 脉冲塔大地脉动护盾效果
+	var shield_amount = effect_data.get("shield_amount", 100.0)
+	# 为友方塔提供护盾
+	_apply_tower_shield_to_allies(shield_amount)
+
+func _apply_tower_shield_to_allies(shield_amount: float):
+	# 为范围内的友方塔提供护盾
+	var tree = get_tree()
+	if not tree or not tree.current_scene:
+		return
+	
+	var radius = 100.0  # 护盾范围
+	var towers = tree.current_scene.get_tree().get_nodes_in_group("tower")
+	for tower in towers:
+		if is_instance_valid(tower) and tower != self:
+			var distance = tower.global_position.distance_to(global_position)
+			if distance <= radius:
+				apply_tower_shield_effect(tower, shield_amount)
+
+func _setup_weight_all_ground_effect(effect_data: Dictionary):
+	# 感应塔地脉感应所有地面单位重压效果
+	var stacks = effect_data.get("stacks", 1)
+	# 启动定时器定期应用重压效果
+	_start_weight_all_ground_timer(stacks)
+
+func _start_weight_all_ground_timer(stacks: int):
+	var timer = Timer.new()
+	timer.name = "WeightAllGroundTimer"
+	timer.wait_time = 2.0  # 每2秒应用一次
+	timer.autostart = true
+	timer.timeout.connect(_on_weight_all_ground_tick.bind(stacks))
+	add_child(timer)
+
+func _on_weight_all_ground_tick(stacks: int):
+	apply_weight_all_ground_effect(stacks)
+
+func _setup_petrify_obelisk_on_death_effect():
+	# 末日塔世界崩塌死亡时石化方尖塔效果
+	# 在单位死亡时触发石化方尖塔
+	pass
+
+func _setup_petrify_chance_bounce_effect(effect_data: Dictionary):
+	# 弹射塔山崩弹射概率石化效果
+	var chance = effect_data.get("chance", 0.30)
+	var duration = effect_data.get("duration", 1.0)
+	# 在弹射时应用概率石化
+	if not projectile_bounce.is_connected(_on_petrify_chance_bounce):
+		projectile_bounce.connect(_on_petrify_chance_bounce.bind(chance, duration))
+
+func _on_petrify_chance_bounce(target: Node, chance: float, duration: float):
+	if randf() < chance:
+		apply_chance_petrify_effect(target, 1.0, duration)
+		# 石化时刷新弹射次数
+		if has_method("refresh_bounce_count"):
+			call("refresh_bounce_count")
+
+func _setup_refresh_on_petrify_effect():
+	# 弹射塔石化时刷新效果
+	# 当目标被石化时刷新弹射
+	pass
+
+func _setup_extra_targets_effect(effect_data: Dictionary):
+	# 弹射塔山崩额外目标效果
+	var extra_targets = effect_data.get("value", 2)
+	# 增加弹射目标数量
+	if has_method("set_extra_targets"):
+		call("set_extra_targets", extra_targets)
+
+func _setup_immune_armor_break_effect():
+	# 光环塔泰坦光环免疫破甲效果
+	# 设置免疫破甲
+	if has_method("set_immune_armor_break"):
+		call("set_immune_armor_break", true)
+
+func _setup_permanent_weight_field_effect(effect_data: Dictionary):
+	# 捕获塔地覆天翻永久重压领域效果
+	# 创建永久重压领域
+	_create_permanent_weight_field()
+
+func _create_permanent_weight_field():
+	# 创建永久重压领域区域
+	# 实际实现需要创建持续的区域效果
+	apply_permanent_weight_field_effect(global_position, 100.0)
+
+func _setup_petrify_on_move_effect(effect_data: Dictionary):
+	# 感应塔震感移动时石化效果
+	var chance = effect_data.get("chance", 0.20)
+	var duration = effect_data.get("duration", 0.5)
+	# 当隐身单位移动时应用石化
+	pass
+
+# 风元素特殊效果设置方法
+func _setup_attack_speed_boost_effect(effect_data: Dictionary):
+	# 攻击速度提升效果
+	var bonus = effect_data.get("bonus", 0.15)
+	damage *= (1.0 + bonus)
+
+func _setup_knockback_target_effect(effect_data: Dictionary):
+	# 击退目标效果
+	var force = effect_data.get("force", 150.0)
+	# 连接攻击信号以应用击退
+	if not attack_hit.is_connected(_on_knockback_attack):
+		attack_hit.connect(_on_knockback_attack.bind(force))
+
+func _setup_knockback_all_effect(effect_data: Dictionary):
+	# 范围击退效果
+	var force = effect_data.get("force", 200.0)
+	# 连接攻击信号以应用范围击退
+	if not attack_hit.is_connected(_on_knockback_all_attack):
+		attack_hit.connect(_on_knockback_all_attack.bind(force))
+
+func _setup_imbalance_area_effect(effect_data: Dictionary):
+	# 失衡区域效果
+	var duration = effect_data.get("duration", 2.0)
+	# 连接攻击信号以应用失衡区域
+	if not attack_hit.is_connected(_on_imbalance_area_attack):
+		attack_hit.connect(_on_imbalance_area_attack.bind(duration))
+
+func _setup_imbalance_stealth_effect(effect_data: Dictionary):
+	# 失衡隐身单位效果
+	var duration = effect_data.get("duration", 2.0)
+	# 连接攻击信号以应用失衡到隐身单位
+	if not attack_hit.is_connected(_on_imbalance_stealth_attack):
+		attack_hit.connect(_on_imbalance_stealth_attack.bind(duration))
+
+func _setup_silence_target_effect(effect_data: Dictionary):
+	# 沉默目标效果
+	var duration = effect_data.get("duration", 3.0)
+	# 连接攻击信号以应用沉默
+	if not attack_hit.is_connected(_on_silence_attack):
+		attack_hit.connect(_on_silence_attack.bind(duration))
+
+func _setup_silence_stealth_effect(effect_data: Dictionary):
+	# 沉默隐身单位效果
+	var duration = effect_data.get("duration", 3.0)
+	# 连接攻击信号以应用沉默到隐身单位
+	if not attack_hit.is_connected(_on_silence_stealth_attack):
+		attack_hit.connect(_on_silence_stealth_attack.bind(duration))
+
+func _setup_silence_chance_effect(effect_data: Dictionary):
+	# 概率沉默效果
+	var chance = effect_data.get("chance", 0.15)
+	var duration = effect_data.get("duration", 2.0)
+	# 连接攻击信号以应用概率沉默
+	if not attack_hit.is_connected(_on_silence_chance_attack):
+		attack_hit.connect(_on_silence_chance_attack.bind(chance, duration))
+
+func _setup_multi_wind_blades_effect(effect_data: Dictionary):
+	# 多重风刃效果
+	var blade_count = effect_data.get("blade_count", 3)
+	# 设置多重射击
+	if has_method("set_multi_shot"):
+		call("set_multi_shot", blade_count)
+
+func _setup_capture_range_effect(effect_data: Dictionary):
+	# 捕获范围提升效果
+	var range_multiplier = effect_data.get("range_multiplier", 1.30)
+	attack_range *= range_multiplier
+
+func _setup_pull_to_center_effect(effect_data: Dictionary):
+	# 拉向中心效果
+	var force = effect_data.get("force", 100.0)
+	# 连接攻击信号以应用拉力效果
+	if not attack_hit.is_connected(_on_pull_to_center_attack):
+		attack_hit.connect(_on_pull_to_center_attack.bind(force))
+
+func _setup_wind_blades_bounce_effect(effect_data: Dictionary):
+	# 风刃弹射效果
+	var bounce_count = effect_data.get("bounce_count", 1)
+	# 设置弹射次数
+	if has_method("set_bounce_count"):
+		call("set_bounce_count", bounce_count)
+
+func _setup_reveal_nearby_effect(effect_data: Dictionary):
+	# 显现周围敌人效果
+	var reveal_range = effect_data.get("range", 100.0)
+	# 连接攻击信号以应用显现效果
+	if not attack_hit.is_connected(_on_reveal_nearby_attack):
+		attack_hit.connect(_on_reveal_nearby_attack.bind(reveal_range))
+
+func _setup_dodge_chance_effect(effect_data: Dictionary):
+	# 闪避几率效果
+	var dodge_chance = effect_data.get("chance", 0.50)
+	# 为自身添加闪避效果
+	if has_method("set_dodge_chance"):
+		call("set_dodge_chance", dodge_chance)
+
+func _setup_ricochet_count_effect(effect_data: Dictionary):
+	# 弹射次数效果
+	var count = effect_data.get("value", 2)
+	# 设置弹射次数
+	if has_method("set_bounce_count"):
+		call("set_bounce_count", count)
+
+func _setup_attack_speed_aura_effect(effect_data: Dictionary):
+	# 攻击速度光环效果
+	var bonus = effect_data.get("bonus", 0.05)
+	var aura_range = effect_data.get("range", 150.0)
+	# 启动光环定时器
+	_start_attack_speed_aura_timer(bonus, aura_range)
+
+func _setup_fast_ricochet_effect(effect_data: Dictionary):
+	# 快速弹射效果
+	var speed_multiplier = effect_data.get("speed_multiplier", 2.0)
+	# 设置投射物速度
+	if has_method("set_projectile_speed"):
+		call("set_projectile_speed", speed_multiplier)
+
+func _setup_piercing_attack_effect(effect_data: Dictionary):
+	# 穿透攻击效果
+	# 设置穿透属性
+	if has_method("set_piercing"):
+		call("set_piercing", true)
+
+func _setup_multi_target_effect(effect_data: Dictionary):
+	# 多目标攻击效果
+	var target_count = effect_data.get("value", 2)
+	var damage_multiplier = effect_data.get("damage_multiplier", 0.5)
+	# 设置链式目标
+	if has_method("set_chain_targets"):
+		call("set_chain_targets", target_count, damage_multiplier)
+
+func _setup_tornado_effect(effect_data: Dictionary):
+	# 龙卷风效果
+	var duration = effect_data.get("duration", 4.0)
+	# 连接攻击信号以应用龙卷风
+	if not attack_hit.is_connected(_on_tornado_attack):
+		attack_hit.connect(_on_tornado_attack.bind(duration))
+
+func _setup_imprison_enemies_effect(effect_data: Dictionary):
+	# 禁锢敌人效果
+	var duration = effect_data.get("duration", 4.0)
+	# 连接攻击信号以应用禁锢
+	if not attack_hit.is_connected(_on_imprison_attack):
+		attack_hit.connect(_on_imprison_attack.bind(duration))
+
+func _setup_knockback_on_end_effect(effect_data: Dictionary):
+	# 结束时击退效果
+	var force = effect_data.get("force", 200.0)
+	# 连接攻击信号以应用结束时击退
+	if not attack_hit.is_connected(_on_knockback_on_end_attack):
+		attack_hit.connect(_on_knockback_on_end_attack.bind(force))
+
+func _setup_hurricane_effect(effect_data: Dictionary):
+	# 飓风效果
+	var duration = effect_data.get("duration", 5.0)
+	var pull_force = effect_data.get("pull_force", 50.0)
+	var damage_per_second = effect_data.get("damage_per_second", 20.0)
+	# 连接攻击信号以应用飓风
+	if not attack_hit.is_connected(_on_hurricane_attack):
+		attack_hit.connect(_on_hurricane_attack.bind(duration, pull_force, damage_per_second))
+
+func _setup_flying_debuff_effect(effect_data: Dictionary):
+	# 飞行单位减益效果
+	var speed_reduction = effect_data.get("speed_reduction", 0.20)
+	var attack_speed_reduction = effect_data.get("attack_speed_reduction", 0.20)
+	# 连接攻击信号以应用飞行减益
+	if not attack_hit.is_connected(_on_flying_debuff_attack):
+		attack_hit.connect(_on_flying_debuff_attack.bind(speed_reduction, attack_speed_reduction))
+
+func _setup_exile_effect(effect_data: Dictionary):
+	# 放逐效果
+	var duration = effect_data.get("duration", 8.0)
+	# 连接攻击信号以应用放逐
+	if not attack_hit.is_connected(_on_exile_attack):
+		attack_hit.connect(_on_exile_attack.bind(duration))
+
+func _setup_damage_on_return_effect(effect_data: Dictionary):
+	# 回归时伤害效果
+	var damage_multiplier = effect_data.get("damage_multiplier", 1.0)
+	# 设置回归伤害倍率
+	if has_method("set_damage_on_return_multiplier"):
+		call("set_damage_on_return_multiplier", damage_multiplier)
+
+func _setup_ally_attack_speed_effect(effect_data: Dictionary):
+	# 友方攻击速度效果
+	var bonus = effect_data.get("bonus", 0.30)
+	var aura_range = effect_data.get("range", 200.0)
+	# 启动友方光环定时器
+	_start_ally_attack_speed_timer(bonus, aura_range)
+
+func _setup_bonus_damage_on_end_effect(effect_data: Dictionary):
+	# 结束时额外伤害效果
+	var damage_multiplier = effect_data.get("damage_multiplier", 0.20)
+	# 设置额外伤害倍率
+	if has_method("set_bonus_damage_on_end_multiplier"):
+		call("set_bonus_damage_on_end_multiplier", damage_multiplier)
+
+# 光元素效果设置方法
+func _setup_blind_effect(effect_data: Dictionary):
+	# 致盲效果
+	var duration = effect_data.get("duration", 1.5)
+	var miss_chance = effect_data.get("miss_chance", 0.50)
+	# 连接攻击信号以应用致盲
+	if not attack_hit.is_connected(_on_blind_attack):
+		attack_hit.connect(_on_blind_attack.bind(duration, miss_chance))
+
+func _setup_purify_effect(effect_data: Dictionary):
+	# 净化效果
+	var duration = effect_data.get("duration", 0.0)
+	var heal_amount = effect_data.get("heal_amount", 0.0)
+	var energy_return = effect_data.get("energy_return", 0.0)
+	# 连接攻击信号以应用净化
+	if not attack_hit.is_connected(_on_purify_attack):
+		attack_hit.connect(_on_purify_attack.bind(duration, heal_amount, energy_return))
+
+func _setup_judgment_effect(effect_data: Dictionary):
+	# 审判效果
+	var duration = effect_data.get("duration", 5.0)
+	var damage_multiplier = effect_data.get("damage_multiplier", 1.20)
+	# 连接攻击信号以应用审判
+	if not attack_hit.is_connected(_on_judgment_attack):
+		attack_hit.connect(_on_judgment_attack.bind(duration, damage_multiplier))
+
+func _setup_holy_damage_effect(effect_data: Dictionary):
+	# 神圣伤害效果
+	var multiplier = effect_data.get("multiplier", 1.0)
+	# 设置神圣伤害倍率
+	if has_method("set_holy_damage_multiplier"):
+		call("set_holy_damage_multiplier", multiplier)
+
+func _setup_heal_towers_effect(effect_data: Dictionary):
+	# 治疗友方塔效果
+	var heal_amount = effect_data.get("heal_amount", 25.0)
+	var radius = effect_data.get("radius", 100.0)
+	# 启动治疗定时器
+	_start_heal_towers_timer(heal_amount, radius)
+
+func _setup_energy_return_effect(effect_data: Dictionary):
+	# 能量返还效果
+	var energy_amount = effect_data.get("energy_amount", 5.0)
+	# 设置能量返还
+	if has_method("set_energy_return_amount"):
+		call("set_energy_return_amount", energy_amount)
+
+func _setup_anti_stealth_effect(effect_data: Dictionary):
+	# 反隐身效果
+	var effectiveness = effect_data.get("effectiveness", 2.0)
+	# 增强对隐身单位的检测效果
+	if has_method("set_anti_stealth_effectiveness"):
+		call("set_anti_stealth_effectiveness", effectiveness)
+
+func _setup_judgment_spread_effect(effect_data: Dictionary):
+	# 审判扩散效果
+	var radius = effect_data.get("radius", 50.0)
+	var damage = effect_data.get("damage", 30.0)
+	# 设置审判扩散参数
+	if has_method("set_judgment_spread_params"):
+		call("set_judgment_spread_params", radius, damage)
+
+# 风元素事件处理方法
+func _on_knockback_attack(target: Node, force: float):
+	apply_knockback_effect(target, force)
+
+func _on_knockback_all_attack(target: Node, force: float):
+	apply_knockback_all_effect(global_position, 85.0, force)
+
+func _on_imbalance_area_attack(target: Node, duration: float):
+	apply_imbalance_area_effect(global_position, 85.0, duration)
+
+func _on_imbalance_stealth_attack(target: Node, duration: float):
+	apply_imbalance_stealth_effect(global_position, 120.0, duration)
+
+func _on_silence_attack(target: Node, duration: float):
+	apply_silence_effect(target, duration)
+
+func _on_silence_stealth_attack(target: Node, duration: float):
+	apply_silence_stealth_effect(global_position, 120.0, duration)
+
+func _on_silence_chance_attack(target: Node, chance: float, duration: float):
+	if randf() < chance:
+		apply_silence_effect(target, duration)
+
+func _on_pull_to_center_attack(target: Node, force: float):
+	# 拉向中心的实现需要更复杂的逻辑
+	pass
+
+func _on_reveal_nearby_attack(target: Node, reveal_range: float):
+	# 显现周围敌人的实现
+	pass
+
+func _on_tornado_attack(target: Node, duration: float):
+	apply_tornado_effect(global_position, 85.0, duration)
+
+func _on_imprison_attack(target: Node, duration: float):
+	if target.has_method("apply_imprison"):
+		target.apply_imprison(duration)
+
+func _on_knockback_on_end_attack(target: Node, force: float):
+	# 结束时击退的实现需要特定的效果系统
+	pass
+
+func _on_hurricane_attack(target: Node, duration: float, pull_force: float, damage_per_second: float):
+	if target.has_method("apply_hurricane"):
+		target.apply_hurricane(global_position, duration, pull_force, damage_per_second)
+
+func _on_flying_debuff_attack(target: Node, speed_reduction: float, attack_speed_reduction: float):
+	if target.has_method("is_flying") and target.is_flying():
+		apply_flying_debuff_effect(global_position, 100.0, speed_reduction, attack_speed_reduction)
+
+func _on_exile_attack(target: Node, duration: float):
+	apply_exile_effect(target, duration)
+
+# 风元素定时器方法
+func _start_attack_speed_aura_timer(bonus: float, range: float):
+	var timer = Timer.new()
+	timer.name = "AttackSpeedAuraTimer"
+	timer.wait_time = 1.0  # 每秒应用一次
+	timer.autostart = true
+	timer.timeout.connect(_on_attack_speed_aura_tick.bind(bonus, range))
+	add_child(timer)
+
+func _on_attack_speed_aura_tick(bonus: float, range: float):
+	apply_attack_speed_aura_effect(global_position, range, bonus)
+
+func _start_ally_attack_speed_timer(bonus: float, range: float):
+	var timer = Timer.new()
+	timer.name = "AllyAttackSpeedTimer"
+	timer.wait_time = 1.0  # 每秒应用一次
+	timer.autostart = true
+	timer.timeout.connect(_on_ally_attack_speed_tick.bind(bonus, range))
+	add_child(timer)
+
+func _on_ally_attack_speed_tick(bonus: float, range: float):
+	apply_attack_speed_aura_effect(global_position, range, bonus)
+
+# 光元素事件处理方法
+func _on_blind_attack(target: Node, duration: float, miss_chance: float):
+	apply_blind_effect(target, duration, miss_chance)
+
+func _on_purify_attack(target: Node, duration: float, heal_amount: float, energy_return: float):
+	apply_purify_effect(target, duration, heal_amount, energy_return)
+	# 如果设置了能量返还，返还能量到自身
+	if energy_return > 0:
+		apply_purify_energy_return_effect(self, energy_return)
+
+func _on_judgment_attack(target: Node, duration: float, damage_multiplier: float):
+	apply_judgment_effect(target, duration, damage_multiplier)
+
+# 光元素定时器方法
+func _start_heal_towers_timer(heal_amount: float, radius: float):
+	var timer = Timer.new()
+	timer.name = "HealTowersTimer"
+	timer.wait_time = 2.0  # 每2秒治疗一次
+	timer.autostart = true
+	timer.timeout.connect(_on_heal_towers_tick.bind(heal_amount, radius))
+	add_child(timer)
+
+func _on_heal_towers_tick(heal_amount: float, radius: float):
+	heal_friendly_towers_effect(global_position, radius, heal_amount)
+
+# 辅助方法
+func get_gem_effect_system() -> GemEffectSystem:
+	var tree = get_tree()
+	if tree and tree.current_scene:
+		return tree.current_scene.get_node_or_null("GemEffectSystem")
+	return null
+
+func apply_ice_effect_to_target(target: Node, effect_type: String, duration: float, stacks: int = 1):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_effect(target, effect_type, duration, stacks)
+
+# 土元素效果应用方法
+func apply_earth_effect_to_target(target: Node, effect_type: String, duration: float, stacks: int = 1):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_effect(target, effect_type, duration, stacks)
+
+# 应用重压区域效果
+func apply_weight_area_effect(center: Vector2, radius: float, stacks: int = 1, duration: float = 4.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_weight_area(center, radius, stacks, duration)
+
+# 应用石化效果（带几率）
+func apply_chance_petrify_effect(target: Node, chance: float, duration: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_chance_petrify(target, chance, duration)
+
+# 应用破甲弹射效果
+func apply_armor_break_on_bounce_effect(target: Node, stacks: int = 1, duration: float = 5.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_armor_break_on_bounce(target, stacks, duration)
+
+# 应用重压效果到所有地面单位
+func apply_weight_all_ground_effect(stacks: int = 1, duration: float = 4.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_weight_all_ground(stacks, duration)
+
+# 风元素效果应用方法
+func apply_wind_effect_to_target(target: Node, effect_type: String, duration: float, stacks: int = 1):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_effect(target, effect_type, duration, stacks)
+
+# 应用失衡区域效果
+func apply_imbalance_area_effect(center: Vector2, radius: float, duration: float = 2.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_imbalance_area(center, radius, duration)
+
+# 应用失衡效果到隐身单位
+func apply_imbalance_stealth_effect(center: Vector2, radius: float, duration: float = 2.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_imbalance_stealth(center, radius, duration)
+
+# 应用沉默效果
+func apply_silence_effect(target: Node, duration: float = 3.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_silence(target, duration)
+
+# 应用沉默效果到隐身单位
+func apply_silence_stealth_effect(center: Vector2, radius: float, duration: float = 3.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_silence_stealth(center, radius, duration)
+
+# 应用击退效果
+func apply_knockback_effect(target: Node, force: float = 150.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_knockback(target, force)
+
+# 应用范围击退效果
+func apply_knockback_all_effect(center: Vector2, radius: float, force: float = 200.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_knockback_all(center, radius, force)
+
+# 应用飞行单位减益效果
+func apply_flying_debuff_effect(center: Vector2, radius: float, speed_reduction: float = 0.2, attack_speed_reduction: float = 0.2):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_flying_debuff(center, radius, speed_reduction, attack_speed_reduction)
+
+# 应用放逐效果
+func apply_exile_effect(target: Node, duration: float = 8.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_exile(target, duration)
+
+# 应用龙卷风效果
+func apply_tornado_effect(center: Vector2, radius: float, duration: float = 4.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_tornado(center, radius, duration)
+
+# 应用飓风效果
+func apply_hurricane_effect(center: Vector2, radius: float, duration: float = 5.0, pull_force: float = 50.0, damage_per_second: float = 20.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_hurricane(center, radius, duration, pull_force, damage_per_second)
+
+# 应用攻击速度光环效果
+func apply_attack_speed_aura_effect(center: Vector2, radius: float, speed_bonus: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_attack_speed_aura(center, radius, speed_bonus)
+
+# 移除攻击速度光环效果
+func remove_attack_speed_aura_effect(center: Vector2, radius: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.remove_attack_speed_aura(center, radius)
+
+# 应用弹射结束时的额外伤害
+func apply_bonus_damage_on_end_effect(target: Node, base_damage: float, damage_multiplier: float = 0.20):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_bonus_damage_on_end(target, base_damage, damage_multiplier)
+
+# 应用余震效果
+func apply_aftershock_effect(center: Vector2, radius: float, damage_multiplier: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_aftershock(center, radius, damage_multiplier)
+
+# 应用最大生命值百分比伤害
+func apply_max_hp_damage_effect(target: Node, percentage: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_max_hp_damage(target, percentage)
+
+# 应用护盾效果到友方塔
+func apply_tower_shield_effect(tower: Node, shield_amount: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_tower_shield(tower, shield_amount)
+
+# 应用永久重压领域
+func apply_permanent_weight_field_effect(center: Vector2, radius: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_permanent_weight_field(center, radius)
+
+# 光元素效果应用方法
+func apply_light_effect_to_target(target: Node, effect_type: String, duration: float, stacks: int = 1):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_effect(target, effect_type, duration, stacks)
+
+# 应用致盲效果
+func apply_blind_effect(target: Node, duration: float = 1.5, miss_chance: float = 0.50):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_blind(target, duration, miss_chance)
+
+# 应用净化效果
+func apply_purify_effect(target: Node, duration: float = 0.0, heal_amount: float = 0.0, energy_return: float = 0.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_purify(target, duration, heal_amount, energy_return)
+
+# 应用审判效果
+func apply_judgment_effect(target: Node, duration: float = 5.0, damage_multiplier: float = 1.20):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_judgment(target, duration, damage_multiplier)
+
+# 应用致盲区域效果
+func apply_blind_area_effect(center: Vector2, radius: float, duration: float = 1.5):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_blind_area(center, radius, duration)
+
+# 应用净化区域效果
+func apply_purify_area_effect(center: Vector2, radius: float, heal_amount: float = 0.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_purify_area(center, radius, heal_amount)
+
+# 应用审判区域效果
+func apply_judgment_area_effect(center: Vector2, radius: float, duration: float = 5.0):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_judgment_area(center, radius, duration)
+
+# 应用致盲到隐身单位
+func apply_blind_stealth_effect(center: Vector2, radius: float, duration: float = 1.5):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_blind_stealth(center, radius, duration)
+
+# 应用治疗到友方塔
+func heal_friendly_towers_effect(center: Vector2, radius: float, heal_amount: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.heal_friendly_towers(center, radius, heal_amount)
+
+# 应用能量返还到友方塔
+func restore_energy_to_towers_effect(center: Vector2, radius: float, energy_amount: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.restore_energy_to_towers(center, radius, energy_amount)
+
+# 应用神圣伤害
+func apply_holy_damage_effect(target: Node, base_damage: float) -> float:
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		return gem_effect_system.apply_holy_damage(target, base_damage)
+	return base_damage
+
+# 应用审判扩散效果
+func apply_judgment_spread_effect(death_center: Vector2, radius: float, base_damage: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_judgment_spread(death_center, radius, base_damage)
+
+# 应用净化能量返还
+func apply_purify_energy_return_effect(tower: Node, energy_amount: float):
+	var gem_effect_system = get_gem_effect_system()
+	if gem_effect_system:
+		gem_effect_system.apply_purify_energy_return(tower, energy_amount)
+
 # 获取宝石技能信息
 func get_gem_skills_info() -> Array:
 	if equipped_gem.is_empty():
@@ -703,3 +1996,295 @@ func get_active_gem_effects() -> Array:
 		return []
 	
 	return gem_skills.effects
+
+## Combat Type and Target System Methods
+
+# Check if this tower can target a specific enemy
+func can_target_enemy(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	
+	# Check enemy flight status
+	var is_flying = false
+	if enemy.has_method("is_flying"):
+		is_flying = enemy.is_flying()
+	elif enemy.has_meta("is_flying"):
+		is_flying = enemy.get_meta("is_flying")
+	
+	# Apply target type filtering
+	match target_type:
+		TargetType.GROUND_ONLY:
+			return not is_flying
+		TargetType.AIR_ONLY:
+			return is_flying
+		TargetType.BOTH:
+			return true
+		_:
+			return true
+
+# Setup blocking collision for melee towers
+func setup_blocking_collision() -> void:
+	if not can_block_path:
+		return
+	
+	if blocking_collision:
+		blocking_collision.queue_free()
+	
+	blocking_collision = StaticBody2D.new()
+	var collision_shape = CollisionShape2D.new()
+	var shape = RectangleShape2D.new()
+	
+	# Make blocking area smaller than full tile to allow some passage
+	shape.size = Vector2(20, 15)  # Partial road blocking
+	collision_shape.shape = shape
+	blocking_collision.add_child(collision_shape)
+	
+	# Set collision layers for enemy interaction
+	blocking_collision.collision_layer = 8  # Blocking layer
+	blocking_collision.collision_mask = 0   # Don't detect anything
+	
+	add_child(blocking_collision)
+	is_blocking = true
+
+# Remove blocking collision
+func remove_blocking_collision() -> void:
+	if blocking_collision and is_instance_valid(blocking_collision):
+		blocking_collision.queue_free()
+		blocking_collision = null
+	is_blocking = false
+
+# Take damage (for blocking towers)
+func take_damage(damage_amount: float) -> void:
+	if not can_block_path or not is_alive:
+		return
+	
+	current_health -= damage_amount
+	current_health = max(0, current_health)
+	
+	# Update visual health indicator
+	update_health_display()
+	
+	if current_health <= 0:
+		tower_destroyed()
+
+# Update health display
+func update_health_display() -> void:
+	if not can_block_path:
+		return
+	
+	var health_percentage = current_health / max_health
+	if health_percentage > 0.6:
+		modulate = Color.WHITE
+	elif health_percentage > 0.3:
+		modulate = Color.YELLOW
+	else:
+		modulate = Color.RED
+
+# Handle tower destruction
+func tower_destroyed() -> void:
+	is_alive = false
+	current_target = null
+	remove_blocking_collision()
+	
+	# Visual effects for destruction
+	modulate = Color(0.5, 0.5, 0.5, 0.7)
+	
+	# Start respawn timer
+	var respawn_timer = Timer.new()
+	respawn_timer.wait_time = respawn_time
+	respawn_timer.one_shot = true
+	respawn_timer.timeout.connect(_on_respawn_timer_timeout)
+	add_child(respawn_timer)
+	respawn_timer.start()
+	
+	print("Blocking tower destroyed! Respawning in ", respawn_time, " seconds")
+
+# Handle respawn
+func _on_respawn_timer_timeout() -> void:
+	is_alive = true
+	current_health = max_health
+	modulate = Color.WHITE
+	
+	if can_block_path:
+		setup_blocking_collision()
+	
+	print("Blocking tower respawned!")
+
+# Override build method to setup blocking collision
+func build():
+	deployed = true
+	modulate = Color.WHITE
+	
+	# Add to tower group
+	add_to_group("tower")
+	
+	# Setup blocking collision for melee towers
+	if can_block_path:
+		setup_blocking_collision()
+	
+	# Apply passive bonuses when tower is built
+	call_deferred("apply_passive_bonuses")
+
+# Shadow Effect Setup Methods
+
+func _setup_corrosion_effect(effect_data: Dictionary):
+	var stacks = effect_data.get("stacks", 1)
+	if current_target:
+		apply_corrosion_effect_to_target(current_target, stacks)
+
+func _setup_life_steal_effect(effect_data: Dictionary):
+	var percentage = effect_data.get("percentage", 0.30)
+	life_steal_percentage = percentage
+
+func _setup_healing_reduction_effect(effect_data: Dictionary):
+	var reduction_percent = effect_data.get("reduction_percent", 0.50)
+	if current_target:
+		apply_healing_reduction_to_target(current_target, reduction_percent)
+
+func _setup_chance_fear_effect(effect_data: Dictionary):
+	var chance = effect_data.get("chance", 0.50)
+	var duration = effect_data.get("duration", 2.0)
+	fear_chance = chance
+	fear_duration = duration
+
+func _setup_fear_area_effect(effect_data: Dictionary):
+	var radius = effect_data.get("radius", 85.0)
+	var duration = effect_data.get("duration", 2.0)
+	fear_area_radius = radius
+	fear_area_duration = duration
+
+func _setup_no_healing_effect(effect_data: Dictionary):
+	var duration = effect_data.get("duration", 5.0)
+	no_healing_duration = duration
+
+func _setup_channel_life_drain_effect(effect_data: Dictionary):
+	var drain_percent = effect_data.get("drain_percent", 0.15)
+	var channel_duration = effect_data.get("channel_duration", 3.0)
+	channel_drain_percent = drain_percent
+	channel_drain_duration = channel_duration
+
+func _setup_fear_area_detection_effect(effect_data: Dictionary):
+	var radius = effect_data.get("radius", 120.0)
+	var duration = effect_data.get("duration", 2.0)
+	fear_detection_radius = radius
+	fear_detection_duration = duration
+
+func _setup_global_life_steal_effect(effect_data: Dictionary):
+	var percentage = effect_data.get("percentage", 0.10)
+	var duration = effect_data.get("duration", 3.0)
+	global_life_steal_percentage = percentage
+	global_life_steal_duration = duration
+
+func _setup_corrosion_aura_effect(effect_data: Dictionary):
+	var radius = effect_data.get("radius", 95.0)
+	var stacks = effect_data.get("stacks", 1)
+	var interval = effect_data.get("interval", 2.0)
+	corrosion_aura_radius = radius
+	corrosion_aura_stacks = stacks
+	corrosion_aura_interval = interval
+
+func _setup_life_drain_aura_effect(effect_data: Dictionary):
+	var radius = effect_data.get("radius", 95.0)
+	var drain_percent = effect_data.get("drain_percent", 0.05)
+	life_drain_aura_radius = radius
+	life_drain_aura_percentage = drain_percent
+
+func _setup_permanent_stat_steal_effect(effect_data: Dictionary):
+	var stat = effect_data.get("stat", "damage")
+	var steal_amount = effect_data.get("steal_amount", 1.0)
+	permanent_steal_stat = stat
+	permanent_steal_amount = steal_amount
+
+func _setup_area_life_steal_effect(effect_data: Dictionary):
+	var radius = effect_data.get("radius", 100.0)
+	var percentage = effect_data.get("percentage", 0.15)
+	area_life_steal_radius = radius
+	area_life_steal_percentage = percentage
+
+func _setup_life_cost_effect(effect_data: Dictionary):
+	var percentage = effect_data.get("percentage", 0.10)
+	life_cost_percentage = percentage
+
+func _setup_damage_multiplier_effect(effect_data: Dictionary):
+	var multiplier = effect_data.get("multiplier", 3.0)
+	damage_multiplier = multiplier
+
+func _setup_fear_on_hit_effect(effect_data: Dictionary):
+	var chance = effect_data.get("chance", 0.30)
+	var duration = effect_data.get("duration", 2.0)
+	fear_on_hit_chance = chance
+	fear_on_hit_duration = duration
+
+func _setup_stealth_life_drain_effect(effect_data: Dictionary):
+	var drain_percent = effect_data.get("drain_percent", 0.20)
+	var duration = effect_data.get("duration", 3.0)
+	stealth_life_drain_percent = drain_percent
+	stealth_life_drain_duration = duration
+
+func _setup_stat_steal_on_death_effect(effect_data: Dictionary):
+	var attack_steal = effect_data.get("attack_steal", 0.10)
+	var defense_steal = effect_data.get("defense_steal", 0.10)
+	death_stat_steal_attack = attack_steal
+	death_stat_steal_defense = defense_steal
+
+func _setup_targeting_priority_effect(effect_data: Dictionary):
+	var priority = effect_data.get("priority", "unfeared")
+	var multiplier = effect_data.get("priority_multiplier", 2.0)
+	targeting_priority = priority
+	targeting_priority_multiplier = multiplier
+
+# Shadow Effect Variables
+var life_steal_percentage: float = 0.0
+var fear_chance: float = 0.50
+var fear_duration: float = 2.0
+var fear_area_radius: float = 85.0
+var fear_area_duration: float = 2.0
+var no_healing_duration: float = 5.0
+var channel_drain_percent: float = 0.15
+var channel_drain_duration: float = 3.0
+var fear_detection_radius: float = 120.0
+var fear_detection_duration: float = 2.0
+var global_life_steal_percentage: float = 0.10
+var global_life_steal_duration: float = 3.0
+var corrosion_aura_radius: float = 95.0
+var corrosion_aura_stacks: int = 1
+var corrosion_aura_interval: float = 2.0
+var life_drain_aura_radius: float = 95.0
+var life_drain_aura_percentage: float = 0.05
+var permanent_steal_stat: String = "damage"
+var permanent_steal_amount: float = 1.0
+var area_life_steal_radius: float = 100.0
+var area_life_steal_percentage: float = 0.15
+var life_cost_percentage: float = 0.10
+var damage_multiplier: float = 3.0
+var fear_on_hit_chance: float = 0.30
+var fear_on_hit_duration: float = 2.0
+var stealth_life_drain_percent: float = 0.20
+var stealth_life_drain_duration: float = 3.0
+var death_stat_steal_attack: float = 0.10
+var death_stat_steal_defense: float = 0.10
+var targeting_priority: String = "unfeared"
+var targeting_priority_multiplier: float = 2.0
+
+# Shadow Effect Application Methods
+
+func apply_corrosion_effect_to_target(target: Node, stacks: int = 1):
+	if target and target.has_method("set_corrosion_stacks"):
+		target.set_corrosion_stacks(stacks)
+
+func apply_healing_reduction_to_target(target: Node, reduction_percent: float):
+	if target and target.has_method("apply_healing_reduction"):
+		target.apply_healing_reduction(reduction_percent)
+
+func apply_fear_effect_to_target(target: Node):
+	if target and target.has_method("set_feared"):
+		target.set_feared(true, fear_chance, fear_duration)
+
+func apply_life_drain_effect_to_target(target: Node, drain_percent: float):
+	if target and target.has_method("apply_life_drain"):
+		target.apply_life_drain(drain_percent)
+
+func apply_no_healing_to_target(target: Node):
+	if target and target.has_method("set_no_healing"):
+		target.set_no_healing(true, no_healing_duration)
+EOF < /dev/null

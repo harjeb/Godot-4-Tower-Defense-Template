@@ -151,13 +151,13 @@ var turrets := {
 		"stats": {
 			"damage": 5.0,
 			"attack_speed": 1.0,
-			"attack_range": 100.0,
+			"attack_range": 50.0,  # 近战塔攻击范围很小
 		},
 		"upgrades": {
 			"damage": {"amount": 2.5, "multiplies": false},
 			"attack_speed": {"amount": 1.5, "multiplies": true},
 		},
-		"name": "Explosive",
+		"name": "Blocking Tower",
 		"cost": 70,
 		"upgrade_cost": 50,
 		"max_level": 3,
@@ -168,6 +168,14 @@ var turrets := {
 		"element": "neutral",
 		"gem_slot": null,
 		"turret_category": "melee",
+		"combat_type": "melee",           # 近战类型
+		"target_type": "ground_only",     # 只能攻击地面单位
+		"max_health": 150.0,              # 塔的生命值
+		"respawn_time": 4.0,              # 复活时间
+		"da_bonus": 0.03,
+		"ta_bonus": 0.01,
+		"passive_effect": "blocking",
+		"aoe_type": "none",
 	},
 	"arrow_tower": {
 		"stats": {
@@ -197,7 +205,41 @@ var turrets := {
 		"ta_bonus": 0.01,
 		"passive_effect": "capture_tower_synergy",
 		"aoe_type": "none",
-		"special_mechanics": []
+		"special_mechanics": [],
+		"combat_type": "ranged",         # 远程类型
+		"target_type": "both"            # 可以攻击所有单位
+	},
+	"anti_air": {
+		"stats": {
+			"damage": 20,
+			"attack_speed": 1.5,
+			"attack_range": 220.0,
+			"bulletSpeed": 300.0,
+			"bulletPierce": 1,
+		},
+		"upgrades": {
+			"damage": {"amount": 4.0, "multiplies": false},
+			"attack_speed": {"amount": 1.3, "multiplies": true},
+		},
+		"name": "Anti-Air Tower",
+		"cost": 90,
+		"upgrade_cost": 60,
+		"max_level": 3,
+		"scene": "res://Scenes/turrets/projectileTurret/projectileTurret.tscn",
+		"sprite": "res://Assets/turrets/reallaser.png",
+		"scale": 2.5,
+		"rotates": true,
+		"bullet": "laser",
+		"element": "neutral",
+		"gem_slot": null,
+		"turret_category": "projectile",
+		"combat_type": "ranged",         # 远程类型
+		"target_type": "air_only",       # 只能攻击飞行单位
+		"da_bonus": 0.07,
+		"ta_bonus": 0.02,
+		"passive_effect": "air_superiority",
+		"aoe_type": "none",
+		"special_mechanics": ["air_targeting"]
 	},
 	"capture_tower": {
 		"stats": {
@@ -525,7 +567,8 @@ const enemies := {
 		"drop_table": {
 			"base_chance": 0.05,
 			"items": ["fire_basic", "ice_basic", "earth_basic"]
-		}
+		},
+		"movement_type": "ground"   # 地面单位
 	},
 	"blueDino": {
 		"stats": {
@@ -544,7 +587,8 @@ const enemies := {
 		"drop_table": {
 			"base_chance": 0.06,
 			"items": ["ice_basic", "wind_basic"]
-		}
+		},
+		"movement_type": "ground"   # 地面单位
 	},
 	"yellowDino": {
 		"stats": {
@@ -563,7 +607,8 @@ const enemies := {
 		"drop_table": {
 			"base_chance": 0.08,
 			"items": ["wind_basic", "light_basic"]
-		}
+		},
+		"movement_type": "ground"   # 地面单位
 	},
 	"greenDino": {
 		"stats": {
@@ -582,7 +627,8 @@ const enemies := {
 		"drop_table": {
 			"base_chance": 0.07,
 			"items": ["earth_basic", "dark_basic"]
-		}
+		},
+		"movement_type": "ground"   # 地面单位
 	},
 	"stealthDino": {
 		"stats": {
@@ -601,7 +647,8 @@ const enemies := {
 			"items": ["wind_basic", "light_basic"]
 		},
 		"difficulty": 2.5,
-		"sprite": "res://Assets/enemies/dino2.png"
+		"sprite": "res://Assets/enemies/dino2.png",
+		"movement_type": "ground"   # 地面单位
 	},
 	"healerDino": {
 		"stats": {
@@ -620,7 +667,50 @@ const enemies := {
 			"items": ["light_basic", "light_intermediate"]
 		},
 		"difficulty": 3.5,
-		"sprite": "res://Assets/enemies/dino1.png"
+		"sprite": "res://Assets/enemies/dino1.png",
+		"movement_type": "ground"   # 地面单位，可被阻挡
+	},
+	"flyingDragon": {
+		"stats": {
+			"hp": 15.0,
+			"defense": 20,
+			"speed": 1.5,
+			"baseDamage": 8.0,
+			"goldYield": 25.0,
+		},
+		"element": "wind",
+		"special_abilities": [],
+		"monster_skills": ["acceleration"],
+		"skill_cooldowns": {"acceleration": 10.0},
+		"drop_table": {
+			"base_chance": 0.08,
+			"items": ["wind_basic", "wind_intermediate"]
+		},
+		"difficulty": 2.5,
+		"sprite": "res://Assets/enemies/dino1.png",
+		"movement_type": "flying",    # 飞行单位，无法被阻挡
+		"flying_height": 20.0         # 飞行高度
+	},
+	"airScout": {
+		"stats": {
+			"hp": 8.0,
+			"defense": 5,
+			"speed": 2.2,
+			"baseDamage": 4.0,
+			"goldYield": 15.0,
+		},
+		"element": "neutral",
+		"special_abilities": ["stealth"],
+		"monster_skills": [],
+		"skill_cooldowns": {},
+		"drop_table": {
+			"base_chance": 0.03,
+			"items": ["neutral_basic"]
+		},
+		"difficulty": 1.8,
+		"sprite": "res://Assets/enemies/dino1.png",
+		"movement_type": "flying",    # 飞行单位，无法被阻挡
+		"flying_height": 15.0         # 飞行高度
 	}
 }
 
@@ -815,20 +905,161 @@ const gems := {
 		"element": "ice",
 		"level": 1,
 		"damage_bonus": 0.10,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "寒冰箭",
+				"description": "命中单位减速10%，持续2秒",
+				"effects": ["slow_10_2s"]
+			},
+			"capture_tower": {
+				"name": "冰网",
+				"description": "捕获减速提升至100%，持续+0.5秒",
+				"effects": ["capture_slow_100_duration_0.5s"]
+			},
+			"mage_tower": {
+				"name": "冰锥术",
+				"description": "伤害增加20%，直线穿透，施加1层冰霜",
+				"effects": ["damage_boost_20", "piercing_shot", "frost_debuff_1"]
+			},
+			"感应塔": {
+				"name": "冰镜",
+				"description": "范围内隐身单位移速额外-20%",
+				"effects": ["stealth_slow_20"]
+			},
+			"末日塔": {
+				"name": "冰封之触",
+				"description": "目标攻击速度-30%，受到1层冰霜",
+				"effects": ["attack_speed_reduction_30", "frost_debuff_1"]
+			},
+			"pulse_tower": {
+				"name": "冰霜脉冲",
+				"description": "范围内所有单位受到1层冰霜",
+				"effects": ["frost_area_1"]
+			},
+			"弹射塔": {
+				"name": "冰片弹射",
+				"description": "弹射目标受到1层冰霜",
+				"effects": ["frost_on_bounce_1"]
+			},
+			"aura_tower": {
+				"name": "寒冰光环",
+				"description": "范围内所有敌人移速-5%",
+				"effects": ["aura_slow_5"]
+			},
+			"weakness_tower": {
+				"name": "冻伤",
+				"description": "攻击速度-5%，受到1层冰霜",
+				"effects": ["attack_speed_reduction_5", "frost_debuff_1"]
+			}
+		},
 		"sprite": "res://Assets/gems/ice_basic.png"
 	},
 	"ice_intermediate": {
-		"name": "中级冰宝石",
+		"name": "寒冰之心 2级",
 		"element": "ice",
 		"level": 2,
 		"damage_bonus": 0.20,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "彻骨箭",
+				"description": "减速20%，持续3秒，施加1层冰霜",
+				"effects": ["slow_20_3s", "frost_debuff_1"]
+			},
+			"capture_tower": {
+				"name": "深度冻结",
+				"description": "持续再+0.5秒，目标受到1层冰霜",
+				"effects": ["capture_slow_100_duration_1s", "frost_debuff_1"]
+			},
+			"mage_tower": {
+				"name": "暴风雪",
+				"description": "范围+30%，伤害+40%，施加2层冰霜",
+				"effects": ["damage_boost_40", "aoe_range_30", "frost_debuff_2"]
+			},
+			"感应塔": {
+				"name": "寒冰道标",
+				"description": "隐身单位受到1层冰霜，被所有塔优先攻击",
+				"effects": ["frost_debuff_1", "priority_target"]
+			},
+			"末日塔": {
+				"name": "霜燃",
+				"description": "攻击速度-50%，受到2层冰霜",
+				"effects": ["attack_speed_reduction_50", "frost_debuff_2"]
+			},
+			"pulse_tower": {
+				"name": "冰霜震击",
+				"description": "受到2层冰霜，20%几率冻结0.5秒",
+				"effects": ["frost_debuff_2", "freeze_chance_20_0.5s"]
+			},
+			"弹射塔": {
+				"name": "碎冰弹射",
+				"description": "弹射次数+1，对有冰霜敌人伤害+30%",
+				"effects": ["bounce_count_1", "frost_damage_boost_30"]
+			},
+			"aura_tower": {
+				"name": "深度冻结光环",
+				"description": "敌人移速-10%，冻结时间+20%",
+				"effects": ["aura_slow_10", "freeze_duration_20"]
+			},
+			"weakness_tower": {
+				"name": "失温",
+				"description": "攻击速度-10%，受到2层冰霜",
+				"effects": ["attack_speed_reduction_10", "frost_debuff_2"]
+			}
+		},
 		"sprite": "res://Assets/gems/ice_intermediate.png"
 	},
 	"ice_advanced": {
-		"name": "高级冰宝石",
+		"name": "极夜之魂 3级",
 		"element": "ice",
 		"level": 3,
 		"damage_bonus": 0.35,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "冰河世纪",
+				"description": "减速30%，15%几率冻结1秒，施加2层冰霜",
+				"effects": ["slow_30_3s", "freeze_chance_15_1s", "frost_debuff_2"]
+			},
+			"capture_tower": {
+				"name": "极寒牢笼",
+				"description": "结束时冻结范围内敌人1.5秒",
+				"effects": ["capture_slow_100_duration_1s", "frost_debuff_1", "freeze_on_end_1.5s"]
+			},
+			"mage_tower": {
+				"name": "冰川尖刺",
+				"description": "主目标冻结2秒，范围内敌人3层冰霜",
+				"effects": ["freeze_main_2s", "frost_debuff_3_area"]
+			},
+			"感应塔": {
+				"name": "绝对零度",
+				"description": "范围内所有敌人受到2层冰霜，隐身单位冻结1秒",
+				"effects": ["frost_debuff_2_area", "freeze_stealth_1s"]
+			},
+			"末日塔": {
+				"name": "永恒冬眠",
+				"description": "结束时冻结5秒，死亡时范围冻结周围敌人",
+				"effects": ["attack_speed_reduction_50", "frost_debuff_2", "freeze_on_end_5s", "freeze_on_death"]
+			},
+			"pulse_tower": {
+				"name": "极寒风暴",
+				"description": "留下冰霜地面3秒，对冻结单位伤害×3",
+				"effects": ["frost_ground_3s", "frozen_damage_3x"]
+			},
+			"弹射塔": {
+				"name": "冰锥连锁",
+				"description": "弹射20%几率炸裂，小范围冻结0.5秒",
+				"effects": ["frost_debuff_1", "freeze_chance_20_0.5s_bounce"]
+			},
+			"aura_tower": {
+				"name": "绝对零度光环",
+				"description": "敌人移速-15%，周期性受到冰霜",
+				"effects": ["aura_slow_15", "periodic_frost"]
+			},
+			"weakness_tower": {
+				"name": "冰葬",
+				"description": "攻击速度-15%，10%几率冻结1秒",
+				"effects": ["attack_speed_reduction_15", "freeze_chance_10_1s"]
+			}
+		},
 		"sprite": "res://Assets/gems/ice_advanced.png"
 	},
 	"wind_basic": {
@@ -836,20 +1067,161 @@ const gems := {
 		"element": "wind",
 		"level": 1,
 		"damage_bonus": 0.10,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "风之矢",
+				"description": "攻击速度+15%，吹飞目标",
+				"effects": ["attack_speed_boost_15", "knockback_target"]
+			},
+			"capture_tower": {
+				"name": "风缚网",
+				"description": "被捕获目标沉默，无法使用技能",
+				"effects": ["silence_target"]
+			},
+			"mage_tower": {
+				"name": "风刃",
+				"description": "攻击变为3枚风刃，可攻击不同目标",
+				"effects": ["multi_wind_blades"]
+			},
+			"detection_tower": {
+				"name": "锐风",
+				"description": "范围内隐身单位受到失衡",
+				"effects": ["imbalance_stealth"]
+			},
+			"doomsday_tower": {
+				"name": "风之禁锢",
+				"description": "目标被沉默",
+				"effects": ["silence_target"]
+			},
+			"pulse_tower": {
+				"name": "风压脉冲",
+				"description": "脉冲吹飞所有敌人",
+				"effects": ["knockback_all"]
+			},
+			"ricochet_tower": {
+				"name": "风刃弹",
+				"description": "弹射速度极快，目标受到失衡",
+				"effects": ["fast_ricochet", "imbalance_on_hit"]
+			},
+			"aura_tower": {
+				"name": "迅捷光环",
+				"description": "范围内所有塔攻击速度+5%",
+				"effects": ["attack_speed_aura_5"]
+			},
+			"weakness_tower": {
+				"name": "风蚀",
+				"description": "防御力-5%，受到失衡",
+				"effects": ["defense_reduction_5", "imbalance_on_hit"]
+			}
+		},
 		"sprite": "res://Assets/gems/wind_basic.png"
 	},
 	"wind_intermediate": {
-		"name": "中级风宝石",
+		"name": "风暴之心 2级",
 		"element": "wind",
 		"level": 2,
 		"damage_bonus": 0.20,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "裂风矢",
+				"description": "基于1级，攻击速度+25%，施加失衡2秒",
+				"effects": ["attack_speed_boost_25", "imbalance_on_hit_2s"]
+			},
+			"capture_tower": {
+				"name": "真空陷阱",
+				"description": "基于1级，范围+30%，敌人持续被拉向中心，施加沉默",
+				"effects": ["capture_range_30", "pull_to_center", "silence_target"]
+			},
+			"mage_tower": {
+				"name": "连锁风暴",
+				"description": "基于1级，风刃可弹射1次，命中目标施加失衡",
+				"effects": ["wind_blades_bounce_1", "imbalance_on_hit"]
+			},
+			"detection_tower": {
+				"name": "回音定位",
+				"description": "基于1级，隐身单位被沉默，周围敌人也被显形",
+				"effects": ["silence_stealth", "reveal_nearby"]
+			},
+			"doomsday_tower": {
+				"name": "真空监牢",
+				"description": "基于1级，目标沉默+失衡，50%几率闪避攻击",
+				"effects": ["silence_target", "imbalance_on_hit", "dodge_chance_50"]
+			},
+			"pulse_tower": {
+				"name": "紊乱气流",
+				"description": "基于1级，施加失衡，15%几率沉默2秒",
+				"effects": ["imbalance_all", "silence_chance_15_2s"]
+			},
+			"ricochet_tower": {
+				"name": "穿风弹射",
+				"description": "基于1级，弹射次数+2，每次都小幅吹飞目标",
+				"effects": ["ricochet_count_2", "small_knockback"]
+			},
+			"aura_tower": {
+				"name": "风怒光环",
+				"description": "基于1级，攻击速度+8%，5%几率触发DA",
+				"effects": ["attack_speed_aura_8", "da_chance_5"]
+			},
+			"weakness_tower": {
+				"name": "风切",
+				"description": "基于1级，防御力-10%，受到失衡，攻击速度-10%",
+				"effects": ["defense_reduction_10", "imbalance_on_hit", "attack_speed_reduction_10"]
+			}
+		},
 		"sprite": "res://Assets/gems/wind_intermediate.png"
 	},
 	"wind_advanced": {
-		"name": "高级风宝石",
+		"name": "天穹之魂 3级",
 		"element": "wind",
 		"level": 3,
 		"damage_bonus": 0.35,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "风神怒",
+				"description": "基于2级，攻击穿透，对后续2目标造成50%伤害，均受吹飞+失衡",
+				"effects": ["piercing_attack", "multi_target_2_50", "knockback_all", "imbalance_all"]
+			},
+			"capture_tower": {
+				"name": "风暴之眼",
+				"description": "基于2级，变为4秒龙卷风，敌人被卷起(禁锢)，结束时吹飞",
+				"effects": ["tornado_4s", "imprison_enemies", "knockback_on_end"]
+			},
+			"mage_tower": {
+				"name": "飓风呼啸",
+				"description": "基于2级，目标区域召唤飓风，持续吸引伤害敌人，结束时吹飞",
+				"effects": ["hurricane_summon", "pull_and_damage", "knockback_on_end"]
+			},
+			"detection_tower": {
+				"name": "天空之眼",
+				"description": "基于2级，所有飞行单位攻速移速-20%，隐身单位沉默",
+				"effects": ["flying_debuff_20", "silence_stealth"]
+			},
+			"doomsday_tower": {
+				"name": "放逐",
+				"description": "基于2级，将目标放逐异次元8秒，回归时对周围敌人造成伤害(对Boss无效)",
+				"effects": ["exile_8s", "damage_on_return", "boss_immune"]
+			},
+			"pulse_tower": {
+				"name": "风怒图腾",
+				"description": "基于2级，不造成伤害，为友方塔增加30%攻击速度",
+				"effects": ["no_damage", "ally_attack_speed_30"]
+			},
+			"ricochet_tower": {
+				"name": "风之回响",
+				"description": "基于2级，弹射结束后，最初目标受到总伤害20%的额外伤害",
+				"effects": ["bonus_damage_20_on_end"]
+			},
+			"aura_tower": {
+				"name": "天空光环",
+				"description": "基于2级，攻击速度+12%，DA几率+5%，TA几率+3%",
+				"effects": ["attack_speed_aura_12", "da_chance_5", "ta_chance_3"]
+			},
+			"weakness_tower": {
+				"name": "风之剥离",
+				"description": "基于2级，防御力-15%，受到失衡，被沉默1秒",
+				"effects": ["defense_reduction_15", "imbalance_on_hit", "silence_1s"]
+			}
+		},
 		"sprite": "res://Assets/gems/wind_advanced.png"
 	},
 	"earth_basic": {
@@ -857,62 +1229,485 @@ const gems := {
 		"element": "earth",
 		"level": 1,
 		"damage_bonus": 0.10,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "石肤箭",
+				"description": "命中目标受到1层重压和1层破甲",
+				"effects": ["weight_debuff_1", "armor_break_debuff_1"]
+			},
+			"capture_tower": {
+				"name": "地陷网",
+				"description": "被捕获目标受到2层破甲，防御力-15%",
+				"effects": ["armor_break_debuff_2", "defense_reduction_15"]
+			},
+			"mage_tower": {
+				"name": "陨石术",
+				"description": "攻击变为范围陨石，伤害+30%，施加2层重压",
+				"effects": ["damage_boost_30", "meteor_attack", "weight_debuff_2"]
+			},
+			"detection_tower": {
+				"name": "地听",
+				"description": "范围内隐身单位受到1层重压，防御力-10%",
+				"effects": ["weight_debuff_1", "defense_reduction_10"]
+			},
+			"doomsday_tower": {
+				"name": "石化凝视",
+				"description": "目标防御力持续降低，最多-30%",
+				"effects": ["continuous_defense_reduction_30"]
+			},
+			"pulse_tower": {
+				"name": "地震波",
+				"description": "脉冲对所有单位造成1层重压",
+				"effects": ["weight_area_1"]
+			},
+			"ricochet_tower": {
+				"name": "碎石弹",
+				"description": "弹射目标受到1层破甲",
+				"effects": ["armor_break_on_bounce_1"]
+			},
+			"aura_tower": {
+				"name": "坚石光环",
+				"description": "范围内所有塔物理防御+10%",
+				"effects": ["physical_defense_boost_10"]
+			},
+			"weakness_tower": {
+				"name": "破甲",
+				"description": "防御力-5%，受到1层重压",
+				"effects": ["defense_reduction_5", "weight_debuff_1"]
+			}
+		},
 		"sprite": "res://Assets/gems/earth_basic.png"
 	},
 	"earth_intermediate": {
-		"name": "中级土宝石",
+		"name": "山脉之心 2级",
 		"element": "earth",
 		"level": 2,
 		"damage_bonus": 0.20,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "碎岩箭",
+				"description": "基于1级效果，施加2层重压和2层破甲",
+				"effects": ["weight_debuff_2", "armor_break_debuff_2"]
+			},
+			"capture_tower": {
+				"name": "石化之网",
+				"description": "基于1级效果，被捕获目标受到3层破甲，30%几率石化2秒",
+				"effects": ["armor_break_debuff_3", "petrify_chance_30_2s"]
+			},
+			"mage_tower": {
+				"name": "地动山摇",
+				"description": "基于1级效果，范围+20%，伤害+50%，25%几率石化1秒",
+				"effects": ["damage_boost_50", "aoe_range_20", "petrify_chance_25_1s"]
+			},
+			"detection_tower": {
+				"name": "震感",
+				"description": "基于1级效果，隐身单位受到破甲，移动时几率石化0.5秒",
+				"effects": ["armor_break_debuff_1", "petrify_on_move_0.5s"]
+			},
+			"doomsday_tower": {
+				"name": "地心熔毁",
+				"description": "基于1级效果，防御力-50%，每秒受到最大生命1%伤害",
+				"effects": ["defense_reduction_50", "max_hp_damage_1_percent"]
+			},
+			"pulse_tower": {
+				"name": "余震",
+				"description": "基于1级效果，25%几率触发伤害减半的余震，造成破甲",
+				"effects": ["aftershock_chance_25", "armor_break_debuff_1"]
+			},
+			"ricochet_tower": {
+				"name": "巨石弹射",
+				"description": "基于1级效果，弹射次数-2但伤害大幅提升，100%造成破甲",
+				"effects": ["bounce_count_minus_2", "damage_boost_large", "armor_break_guaranteed"]
+			},
+			"aura_tower": {
+				"name": "山脉光环",
+				"description": "基于1级效果，物理防御+20%，获得反伤5%",
+				"effects": ["physical_defense_boost_20", "thorns_5"]
+			},
+			"weakness_tower": {
+				"name": "粉碎",
+				"description": "基于1级效果，防御力-10%，受到破甲",
+				"effects": ["defense_reduction_10", "armor_break_debuff_1"]
+			}
+		},
 		"sprite": "res://Assets/gems/earth_intermediate.png"
 	},
 	"earth_advanced": {
-		"name": "高级土宝石",
+		"name": "盖亚之魂 3级",
 		"element": "earth",
 		"level": 3,
 		"damage_bonus": 0.35,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "地龙击",
+				"description": "基于2级效果，变为范围攻击，主目标20%几率石化1.5秒",
+				"effects": ["weight_debuff_2", "armor_break_debuff_2", "aoe_attack", "petrify_chance_20_1.5s"]
+			},
+			"capture_tower": {
+				"name": "地覆天翻",
+				"description": "基于2级效果，捕获区域变为永久重压领域，踏入敌人持续减速破甲",
+				"effects": ["armor_break_debuff_3", "permanent_weight_field"]
+			},
+			"mage_tower": {
+				"name": "泰坦之怒",
+				"description": "基于2级效果，召唤3颗连续陨石，幸存者受到5层破甲和重压",
+				"effects": ["damage_boost_50", "triple_meteor", "armor_break_debuff_5", "weight_debuff_5"]
+			},
+			"detection_tower": {
+				"name": "地脉感应",
+				"description": "基于2级效果，感应范围+50%，所有地面单位受到重压",
+				"effects": ["detection_range_50", "weight_area_all_ground"]
+			},
+			"doomsday_tower": {
+				"name": "世界崩塌",
+				"description": "基于2级效果，持续无限，死亡时召唤永久石化方尖塔阻挡地面单位",
+				"effects": ["infinite_duration", "petrify_obelisk_on_death"]
+			},
+			"pulse_tower": {
+				"name": "大地脉动",
+				"description": "基于2级效果，不造成伤害，为友方塔提供护盾，敌人受重压+破甲",
+				"effects": ["tower_shield", "weight_debuff_1", "armor_break_debuff_1"]
+			},
+			"ricochet_tower": {
+				"name": "山崩",
+				"description": "基于2级效果，每次弹射30%几率石化1秒，石化单位刷新时间并弹射到额外2目标",
+				"effects": ["petrify_chance_30_1s_bounce", "refresh_on_petrify", "extra_targets_2"]
+			},
+			"aura_tower": {
+				"name": "泰坦光环",
+				"description": "基于2级效果，物理防御+25%，反伤10%，免疫破甲",
+				"effects": ["physical_defense_boost_25", "thorns_10", "immune_armor_break"]
+			},
+			"weakness_tower": {
+				"name": "山崩",
+				"description": "基于2级效果，防御力-15%，受到破甲，10%几率石化1秒",
+				"effects": ["defense_reduction_15", "armor_break_debuff_1", "petrify_chance_10_1s"]
+			}
+		},
 		"sprite": "res://Assets/gems/earth_advanced.png"
 	},
 	"light_basic": {
-		"name": "初级光宝石",
+		"name": "晨曦宝石 1级",
 		"element": "light",
 		"level": 1,
 		"damage_bonus": 0.10,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "圣光弹",
+				"description": "15%几率致盲1.5秒",
+				"effects": ["blind_chance_15_1.5s"]
+			},
+			"capture_tower": {
+				"name": "净化网",
+				"description": "净化1个增益，返还5能量",
+				"effects": ["purify_1_buff", "energy_return_5"]
+			},
+			"mage_tower": {
+				"name": "圣光术",
+				"description": "审判1个目标，伤害+20%",
+				"effects": ["judgment_1_target", "damage_bonus_20"]
+			},
+			"感应塔": {
+				"name": "光明感知",
+				"description": "显现隐身单位，致盲2秒",
+				"effects": ["reveal_stealth", "blind_stealth_2s"]
+			},
+			"末日塔": {
+				"name": "圣光净化",
+				"description": "审判主要目标",
+				"effects": ["judgment_main_target"]
+			},
+			"脉冲塔": {
+				"name": "光之脉冲",
+				"description": "致盲范围内敌人1.5秒",
+				"effects": ["blind_area_1.5s"]
+			},
+			"弹射塔": {
+				"name": "圣光弹射",
+				"description": "弹射时20%几率致盲",
+				"effects": ["blind_chance_bounce_20"]
+			},
+			"aura_tower": {
+				"name": "圣光光环",
+				"description": "每5秒恢复友方塔生命",
+				"effects": ["heal_ally_towers_5s"]
+			},
+			"weakness_tower": {
+				"name": "破甲圣光",
+				"description": "防御-5%，致盲",
+				"effects": ["defense_reduction_5", "blind_target"]
+			}
+		},
 		"sprite": "res://Assets/gems/light_basic.png"
 	},
 	"light_intermediate": {
-		"name": "中级光宝石",
+		"name": "耀阳宝石 2级",
 		"element": "light",
 		"level": 2,
 		"damage_bonus": 0.20,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "审判之箭",
+				"description": "30%几率致盲2秒，审判目标",
+				"effects": ["blind_chance_30_2s", "judgment_target"]
+			},
+			"capture_tower": {
+				"name": "深度净化",
+				"description": "净化所有增益，治疗友方塔",
+				"effects": ["purify_all_buffs", "heal_friendly_towers"]
+			},
+			"mage_tower": {
+				"name": "耀阳术",
+				"description": "范围审判，伤害+40%",
+				"effects": ["judgment_area", "damage_bonus_40"]
+			},
+			"感应塔": {
+				"name": "光明领域",
+				"description": "显现所有敌人，致盲隐身单位",
+				"effects": ["reveal_all_enemies", "blind_all_stealth"]
+			},
+			"末日塔": {
+				"name": "耀阳审判",
+				"description": "审判+扩散效果",
+				"effects": ["judgment_spread"]
+			},
+			"脉冲塔": {
+				"name": "耀阳光环",
+				"description": "治疗友方塔+致盲敌人",
+				"effects": ["heal_towers_blind_enemies"]
+			},
+			"弹射塔": {
+				"name": "耀阳弹射",
+				"description": "弹射时净化+致盲",
+				"effects": ["purify_bounce", "blind_bounce"]
+			},
+			"aura_tower": {
+				"name": "耀阳光环",
+				"description": "净化攻击+充能+10%",
+				"effects": ["purify_attack", "energy_bonus_10"]
+			},
+			"weakness_tower": {
+				"name": "审判弱点",
+				"description": "防御-10%，审判目标",
+				"effects": ["defense_reduction_10", "judgment_target"]
+			}
+		},
 		"sprite": "res://Assets/gems/light_intermediate.png"
 	},
 	"light_advanced": {
-		"name": "高级光宝石",
+		"name": "天堂宝石 3级",
 		"element": "light",
 		"level": 3,
 		"damage_bonus": 0.35,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "天堂之箭",
+				"description": "50%几率致盲3秒，审判扩散",
+				"effects": ["blind_chance_50_3s", "judgment_spread"]
+			},
+			"capture_tower": {
+				"name": "天堂净化",
+				"description": "净化+治疗+能量返还",
+				"effects": ["purify_heal_energy_return"]
+			},
+			"mage_tower": {
+				"name": "天堂回响",
+				"description": "审判额外伤害+审判扩散",
+				"effects": ["judgment_extra_damage", "judgment_spread"]
+			},
+			"感应塔": {
+				"name": "天堂感知",
+				"description": "优先攻击审判目标，反隐身+致盲",
+				"effects": ["prioritize_judgment", "anti_stealth_blind"]
+			},
+			"末日塔": {
+				"name": "天堂末日",
+				"description": "审判扩散+神圣伤害",
+				"effects": ["judgment_spread_holy"]
+			},
+			"脉冲塔": {
+				"name": "天堂圣光",
+				"description": "大规模治疗+审判",
+				"effects": ["mass_heal_judgment"]
+			},
+			"弹射塔": {
+				"name": "天堂弹射",
+				"description": "弹射审判+扩散",
+				"effects": ["bounce_judgment_spread"]
+			},
+			"aura_tower": {
+				"name": "天堂光环",
+				"description": "持续治疗+净化+能量返还",
+				"effects": ["continuous_heal_purify_energy"]
+			},
+			"weakness_tower": {
+				"name": "天堂审判",
+				"description": "防御-15%，审判+神圣伤害",
+				"effects": ["defense_reduction_15", "judgment_holy_damage"]
+			}
+		},
 		"sprite": "res://Assets/gems/light_advanced.png"
 	},
 	"dark_basic": {
-		"name": "初级暗宝石",
+		"name": "暗影宝石 1级",
 		"element": "dark",
 		"level": 1,
 		"damage_bonus": 0.10,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "暗影箭",
+				"description": "命中单位受到腐蚀+30%吸血",
+				"effects": ["corrosion_1", "life_steal_30"]
+			},
+			"capture_tower": {
+				"name": "暗影之网",
+				"description": "2层腐蚀+治疗-50%",
+				"effects": ["corrosion_2", "healing_reduction_50"]
+			},
+			"mage_tower": {
+				"name": "痛苦诅咒",
+				"description": "腐蚀+死亡传染",
+				"effects": ["corrosion_1", "death_contagion"]
+			},
+			"detection_tower": {
+				"name": "暗影侦测",
+				"description": "腐蚀",
+				"effects": ["corrosion_1"]
+			},
+			"doomsday_tower": {
+				"name": "暗影契约",
+				"description": "50%伤害转化生命",
+				"effects": ["life_steal_50"]
+			},
+			"pulse_tower": {
+				"name": "凋零脉冲",
+				"description": "腐蚀",
+				"effects": ["corrosion_1"]
+			},
+			"ricochet_tower": {
+				"name": "腐蚀弹",
+				"description": "腐蚀",
+				"effects": ["corrosion_1"]
+			},
+			"aura_tower": {
+				"name": "吸血光环",
+				"description": "5%生命虹吸",
+				"effects": ["life_drain_aura_5"]
+			},
+			"weakness_tower": {
+				"name": "腐蚀",
+				"description": "防御-5%+腐蚀",
+				"effects": ["defense_reduction_5", "corrosion_1"]
+			}
+		},
 		"sprite": "res://Assets/gems/dark_basic.png"
 	},
 	"dark_intermediate": {
-		"name": "中级暗宝石",
+		"name": "暗影之心 2级",
 		"element": "dark",
 		"level": 2,
 		"damage_bonus": 0.20,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "吸血箭",
+				"description": "2层腐蚀+50%吸血",
+				"effects": ["corrosion_2", "life_steal_50"]
+			},
+			"capture_tower": {
+				"name": "恐惧之网",
+				"description": "50%恐惧2秒",
+				"effects": ["fear_chance_50_2s"]
+			},
+			"mage_tower": {
+				"name": "生命吸取",
+				"description": "引导吸血+腐蚀",
+				"effects": ["channel_life_drain", "corrosion_2"]
+			},
+			"detection_tower": {
+				"name": "恐惧降临",
+				"description": "侦测时周围恐惧",
+				"effects": ["fear_area_detection"]
+			},
+			"doomsday_tower": {
+				"name": "灵魂灼烧",
+				"description": "腐蚀+生命虹吸+无法治疗",
+				"effects": ["corrosion_3", "life_drain_20", "no_healing"]
+			},
+			"pulse_tower": {
+				"name": "恐惧脉冲",
+				"description": "20%恐惧1.5秒",
+				"effects": ["fear_chance_20_1.5s"]
+			},
+			"ricochet_tower": {
+				"name": "虹吸弹射",
+				"description": "生命虹吸+所有塔吸血",
+				"effects": ["life_drain_15", "all_towers_life_steal"]
+			},
+			"aura_tower": {
+				"name": "腐败光环",
+				"description": "治疗-25%+持续腐蚀",
+				"effects": ["healing_reduction_25", "corrosion_aura"]
+			},
+			"weakness_tower": {
+				"name": "凋零",
+				"description": "防御-10%+腐蚀+生命虹吸",
+				"effects": ["defense_reduction_10", "corrosion_2", "life_drain_10"]
+			}
+		},
 		"sprite": "res://Assets/gems/dark_intermediate.png"
 	},
 	"dark_advanced": {
-		"name": "高级暗宝石",
+		"name": "暗影之魂 3级",
 		"element": "dark",
 		"level": 3,
 		"damage_bonus": 0.35,
+		"tower_skills": {
+			"arrow_tower": {
+				"name": "灵魂榨取",
+				"description": "3层腐蚀+100%吸血+死亡永久+1攻击",
+				"effects": ["corrosion_3", "life_steal_100", "permanent_attack_steal"]
+			},
+			"capture_tower": {
+				"name": "绝望深渊",
+				"description": "3层腐蚀+生命虹吸+范围内吸血",
+				"effects": ["corrosion_3", "life_drain_25", "area_life_steal"]
+			},
+			"mage_tower": {
+				"name": "灵魂火",
+				"description": "消耗10%生命+巨量伤害+恐惧",
+				"effects": ["life_cost_10", "massive_damage", "fear_on_hit"]
+			},
+			"detection_tower": {
+				"name": "虚空之眼",
+				"description": "治疗-30%+隐身生命虹吸",
+				"effects": ["healing_reduction_30", "stealth_life_drain"]
+			},
+			"doomsday_tower": {
+				"name": "末日降临",
+				"description": "无限持续+死亡偷取10%攻防",
+				"effects": ["infinite_duration", "stat_steal_on_death_10"]
+			},
+			"pulse_tower": {
+				"name": "生命献祭",
+				"description": "消耗5%生命+5倍伤害+生命虹吸",
+				"effects": ["life_cost_5", "damage_multiplier_5", "life_drain_30"]
+			},
+			"ricochet_tower": {
+				"name": "恐惧连锁",
+				"description": "15%恐惧+优先攻击未恐惧",
+				"effects": ["fear_chance_15", "prioritize_unfeared"]
+			},
+			"aura_tower": {
+				"name": "深渊光环",
+				"description": "10%生命虹吸+治疗-50%+持续腐蚀",
+				"effects": ["life_drain_aura_10", "healing_reduction_50", "corrosion_aura"]
+			},
+			"weakness_tower": {
+				"name": "绝望",
+				"description": "防御-15%+腐蚀+生命虹吸+无法治疗",
+				"effects": ["defense_reduction_15", "corrosion_3", "life_drain_20", "no_healing"]
+			}
+		},
 		"sprite": "res://Assets/gems/dark_advanced.png"
 	}
 }
@@ -1188,6 +1983,728 @@ const effects := {
 		"effect_type": "carbonization_field",
 		"trigger_time": 2.5,
 		"duration": 1.5
+	},
+	
+	# 冰霜效果
+	"frost_debuff_1": {
+		"type": "debuff",
+		"debuff_type": "frost",
+		"stacks": 1,
+		"slow_per_stack": 0.02,
+		"damage_bonus": 0.02,
+		"duration": 4.0
+	},
+	"frost_debuff_2": {
+		"type": "debuff",
+		"debuff_type": "frost",
+		"stacks": 2,
+		"slow_per_stack": 0.02,
+		"damage_bonus": 0.02,
+		"duration": 4.0
+	},
+	"frost_debuff_3": {
+		"type": "debuff",
+		"debuff_type": "frost",
+		"stacks": 3,
+		"slow_per_stack": 0.02,
+		"damage_bonus": 0.02,
+		"duration": 4.0
+	},
+	
+	# 减速效果
+	"slow_10_2s": {
+		"type": "stat_modifier",
+		"stat": "movement_speed",
+		"operation": "multiply",
+		"value": 0.90,
+		"duration": 2.0
+	},
+	"slow_20_3s": {
+		"type": "stat_modifier",
+		"stat": "movement_speed",
+		"operation": "multiply",
+		"value": 0.80,
+		"duration": 3.0
+	},
+	"slow_30_3s": {
+		"type": "stat_modifier",
+		"stat": "movement_speed",
+		"operation": "multiply",
+		"value": 0.70,
+		"duration": 3.0
+	},
+	
+	# 攻击速度降低
+	"attack_speed_reduction_5": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 0.95,
+		"duration": 3.0
+	},
+	"attack_speed_reduction_10": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 0.90,
+		"duration": 3.0
+	},
+	"attack_speed_reduction_15": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 0.85,
+		"duration": 3.0
+	},
+	"attack_speed_reduction_30": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 0.70,
+		"duration": 3.0
+	},
+	"attack_speed_reduction_50": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 0.50,
+		"duration": 3.0
+	},
+	
+	# 冰霜特殊效果
+	"frost_area_1": {
+		"type": "special",
+		"effect_type": "frost_area",
+		"stacks": 1
+	},
+	"frost_on_bounce_1": {
+		"type": "special",
+		"effect_type": "frost_on_bounce",
+		"stacks": 1
+	},
+	"aura_slow_5": {
+		"type": "special",
+		"effect_type": "aura_slow",
+		"slow_amount": 0.05
+	},
+	"aura_slow_10": {
+		"type": "special",
+		"effect_type": "aura_slow",
+		"slow_amount": 0.10
+	},
+	"aura_slow_15": {
+		"type": "special",
+		"effect_type": "aura_slow",
+		"slow_amount": 0.15
+	},
+	
+	# 冻结效果
+	"freeze_chance_15_1s": {
+		"type": "special",
+		"effect_type": "chance_freeze",
+		"chance": 0.15,
+		"duration": 1.0
+	},
+	"freeze_chance_20_0.5s": {
+		"type": "special",
+		"effect_type": "chance_freeze",
+		"chance": 0.20,
+		"duration": 0.5
+	},
+	"freeze_chance_10_1s": {
+		"type": "special",
+		"effect_type": "chance_freeze",
+		"chance": 0.10,
+		"duration": 1.0
+	},
+	"freeze_chance_20_0.5s_bounce": {
+		"type": "special",
+		"effect_type": "chance_freeze_bounce",
+		"chance": 0.20,
+		"duration": 0.5
+	},
+	"freeze_main_2s": {
+		"type": "special",
+		"effect_type": "freeze_main_target",
+		"duration": 2.0
+	},
+	"freeze_on_end_1.5s": {
+		"type": "special",
+		"effect_type": "freeze_on_effect_end",
+		"duration": 1.5
+	},
+	"freeze_on_end_5s": {
+		"type": "special",
+		"effect_type": "freeze_on_effect_end",
+		"duration": 5.0
+	},
+	"freeze_stealth_1s": {
+		"type": "special",
+		"effect_type": "freeze_stealth_units",
+		"duration": 1.0
+	},
+	"freeze_on_death": {
+		"type": "special",
+		"effect_type": "freeze_on_death"
+	},
+	
+	# 其他冰霜效果
+	"capture_slow_100_duration_0.5s": {
+		"type": "special",
+		"effect_type": "capture_slow_bonus",
+		"slow_multiplier": 1.0,
+		"duration_bonus": 0.5
+	},
+	"capture_slow_100_duration_1s": {
+		"type": "special",
+		"effect_type": "capture_slow_bonus",
+		"slow_multiplier": 1.0,
+		"duration_bonus": 1.0
+	},
+	"stealth_slow_20": {
+		"type": "special",
+		"effect_type": "stealth_slow",
+		"slow_amount": 0.20
+	},
+	"priority_target": {
+		"type": "special",
+		"effect_type": "priority_targeting"
+	},
+	"damage_boost_40": {
+		"type": "stat_modifier",
+		"stat": "damage",
+		"operation": "multiply",
+		"value": 1.40
+	},
+	"aoe_range_30": {
+		"type": "attack_modifier",
+		"property": "aoe_range",
+		"value": 1.30
+	},
+	"frost_debuff_2_area": {
+		"type": "special",
+		"effect_type": "frost_debuff_area",
+		"stacks": 2
+	},
+	"frost_debuff_3_area": {
+		"type": "special",
+		"effect_type": "frost_debuff_area",
+		"stacks": 3
+	},
+	"frost_ground_3s": {
+		"type": "special",
+		"effect_type": "frost_ground",
+		"duration": 3.0
+	},
+	"frozen_damage_3x": {
+		"type": "special",
+		"effect_type": "frozen_damage_multiplier",
+		"multiplier": 3.0
+	},
+	"bounce_count_1": {
+		"type": "attack_modifier",
+		"property": "bounce_count",
+		"value": 1
+	},
+	"frost_damage_boost_30": {
+		"type": "damage_modifier",
+		"target_condition": "frost",
+		"multiplier": 1.30
+	},
+	"freeze_duration_20": {
+		"type": "special",
+		"effect_type": "freeze_duration_bonus",
+		"bonus": 0.20
+	},
+	"periodic_frost": {
+		"type": "special",
+		"effect_type": "periodic_frost",
+		"interval": 2.0
+	},
+	"piercing_shot": {
+		"type": "attack_modifier",
+		"property": "piercing",
+		"value": true
+	},
+	
+	# 土系效果 - 重压
+	"weight_debuff_1": {
+		"type": "debuff",
+		"debuff_type": "weight",
+		"stacks": 1,
+		"speed_reduction_per_stack": 0.015,
+		"defense_reduction_per_stack": 1.0,
+		"duration": 4.0
+	},
+	"weight_debuff_2": {
+		"type": "debuff",
+		"debuff_type": "weight",
+		"stacks": 2,
+		"speed_reduction_per_stack": 0.015,
+		"defense_reduction_per_stack": 1.0,
+		"duration": 4.0
+	},
+	"weight_debuff_3": {
+		"type": "debuff",
+		"debuff_type": "weight",
+		"stacks": 3,
+		"speed_reduction_per_stack": 0.015,
+		"defense_reduction_per_stack": 1.0,
+		"duration": 4.0
+	},
+	"weight_debuff_5": {
+		"type": "debuff",
+		"debuff_type": "weight",
+		"stacks": 5,
+		"speed_reduction_per_stack": 0.015,
+		"defense_reduction_per_stack": 1.0,
+		"duration": 4.0
+	},
+	
+	# 土系效果 - 破甲
+	"armor_break_debuff_1": {
+		"type": "debuff",
+		"debuff_type": "armor_break",
+		"stacks": 1,
+		"defense_reduction_percent": 0.05,
+		"duration": 5.0
+	},
+	"armor_break_debuff_2": {
+		"type": "debuff",
+		"debuff_type": "armor_break",
+		"stacks": 2,
+		"defense_reduction_percent": 0.05,
+		"duration": 5.0
+	},
+	"armor_break_debuff_3": {
+		"type": "debuff",
+		"debuff_type": "armor_break",
+		"stacks": 3,
+		"defense_reduction_percent": 0.05,
+		"duration": 5.0
+	},
+	"armor_break_debuff_5": {
+		"type": "debuff",
+		"debuff_type": "armor_break",
+		"stacks": 5,
+		"defense_reduction_percent": 0.05,
+		"duration": 5.0
+	},
+	
+	# 土系效果 - 石化
+	"petrify_chance_10_1s": {
+		"type": "special",
+		"effect_type": "chance_petrify",
+		"chance": 0.10,
+		"duration": 1.0
+	},
+	"petrify_chance_20_1.5s": {
+		"type": "special",
+		"effect_type": "chance_petrify",
+		"chance": 0.20,
+		"duration": 1.5
+	},
+	"petrify_chance_25_1s": {
+		"type": "special",
+		"effect_type": "chance_petrify",
+		"chance": 0.25,
+		"duration": 1.0
+	},
+	"petrify_chance_30_1s": {
+		"type": "special",
+		"effect_type": "chance_petrify",
+		"chance": 0.30,
+		"duration": 1.0
+	},
+	"petrify_chance_30_2s": {
+		"type": "special",
+		"effect_type": "chance_petrify",
+		"chance": 0.30,
+		"duration": 2.0
+	},
+	
+	# 土系特殊效果
+	"weight_area_1": {
+		"type": "special",
+		"effect_type": "weight_area",
+		"stacks": 1
+	},
+	"armor_break_on_bounce_1": {
+		"type": "special",
+		"effect_type": "armor_break_on_bounce",
+		"stacks": 1
+	},
+	"meteor_attack": {
+		"type": "attack_modifier",
+		"property": "meteor",
+		"value": true
+	},
+	"triple_meteor": {
+		"type": "attack_modifier",
+		"property": "triple_meteor",
+		"value": true
+	},
+	"aoe_attack": {
+		"type": "attack_modifier",
+		"property": "aoe",
+		"value": true
+	},
+	"physical_defense_boost_10": {
+		"type": "stat_modifier",
+		"stat": "physical_defense",
+		"operation": "multiply",
+		"value": 1.10
+	},
+	"physical_defense_boost_20": {
+		"type": "stat_modifier",
+		"stat": "physical_defense",
+		"operation": "multiply",
+		"value": 1.20
+	},
+	"physical_defense_boost_25": {
+		"type": "stat_modifier",
+		"stat": "physical_defense",
+		"operation": "multiply",
+		"value": 1.25
+	},
+	"thorns_5": {
+		"type": "special",
+		"effect_type": "thorns",
+		"percentage": 0.05
+	},
+	"thorns_10": {
+		"type": "special",
+		"effect_type": "thorns",
+		"percentage": 0.10
+	},
+	"continuous_defense_reduction_30": {
+		"type": "special",
+		"effect_type": "continuous_defense_reduction",
+		"max_reduction": 0.30
+	},
+	"max_hp_damage_1_percent": {
+		"type": "special",
+		"effect_type": "max_hp_damage",
+		"percentage": 0.01
+	},
+	"aftershock_chance_25": {
+		"type": "special",
+		"effect_type": "aftershock",
+		"chance": 0.25,
+		"damage_multiplier": 0.5
+	},
+	"bounce_count_minus_2": {
+		"type": "attack_modifier",
+		"property": "bounce_count",
+		"value": -2
+	},
+	"damage_boost_large": {
+		"type": "stat_modifier",
+		"stat": "damage",
+		"operation": "multiply",
+		"value": 2.0
+	},
+	"armor_break_guaranteed": {
+		"type": "special",
+		"effect_type": "guaranteed_armor_break"
+	},
+	"detection_range_50": {
+		"type": "attack_modifier",
+		"property": "detection_range",
+		"value": 1.50
+	},
+	"weight_area_all_ground": {
+		"type": "special",
+		"effect_type": "weight_area_all_ground"
+	},
+	"infinite_duration": {
+		"type": "special",
+		"effect_type": "infinite_duration"
+	},
+	"petrify_obelisk_on_death": {
+		"type": "special",
+		"effect_type": "petrify_obelisk_on_death"
+	},
+	"tower_shield": {
+		"type": "special",
+		"effect_type": "tower_shield",
+		"shield_amount": 100.0
+	},
+	"petrify_chance_30_1s_bounce": {
+		"type": "special",
+		"effect_type": "petrify_chance_bounce",
+		"chance": 0.30,
+		"duration": 1.0
+	},
+	"refresh_on_petrify": {
+		"type": "special",
+		"effect_type": "refresh_on_petrify"
+	},
+	"extra_targets_2": {
+		"type": "attack_modifier",
+		"property": "extra_targets",
+		"value": 2
+	},
+	"immune_armor_break": {
+		"type": "special",
+		"effect_type": "immune_armor_break"
+	},
+	"permanent_weight_field": {
+		"type": "special",
+		"effect_type": "permanent_weight_field"
+	},
+	"petrify_on_move_0.5s": {
+		"type": "special",
+		"effect_type": "petrify_on_move",
+		"chance": 0.20,
+		"duration": 0.5
+	},
+	
+	# 风系效果 - 攻击速度提升
+	"attack_speed_boost_15": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 1.15
+	},
+	"attack_speed_boost_25": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 1.25
+	},
+	
+	# 风系效果 - 击退
+	"knockback_target": {
+		"type": "special",
+		"effect_type": "knockback",
+		"force": 150.0
+	},
+	"knockback_all": {
+		"type": "special",
+		"effect_type": "knockback_all",
+		"force": 200.0
+	},
+	"small_knockback": {
+		"type": "special",
+		"effect_type": "knockback",
+		"force": 80.0
+	},
+	
+	# 风系效果 - 失衡
+	"imbalance_on_hit": {
+		"type": "debuff",
+		"debuff_type": "imbalance",
+		"duration": 2.0
+	},
+	"imbalance_on_hit_2s": {
+		"type": "debuff",
+		"debuff_type": "imbalance",
+		"duration": 2.0
+	},
+	"imbalance_all": {
+		"type": "special",
+		"effect_type": "imbalance_area",
+		"duration": 2.0
+	},
+	"imbalance_stealth": {
+		"type": "special",
+		"effect_type": "imbalance_stealth",
+		"duration": 2.0
+	},
+	
+	# 风系效果 - 沉默
+	"silence_target": {
+		"type": "debuff",
+		"debuff_type": "silence",
+		"duration": 3.0
+	},
+	"silence_stealth": {
+		"type": "special",
+		"effect_type": "silence_stealth",
+		"duration": 3.0
+	},
+	"silence_chance_15_2s": {
+		"type": "special",
+		"effect_type": "silence_chance",
+		"chance": 0.15,
+		"duration": 2.0
+	},
+	"silence_1s": {
+		"type": "debuff",
+		"debuff_type": "silence",
+		"duration": 1.0
+	},
+	
+	# 风系效果 - 防御降低
+	"defense_reduction_5": {
+		"type": "stat_modifier",
+		"stat": "defense",
+		"operation": "multiply",
+		"value": 0.95
+	},
+	"defense_reduction_10": {
+		"type": "stat_modifier",
+		"stat": "defense",
+		"operation": "multiply",
+		"value": 0.90
+	},
+	"defense_reduction_15": {
+		"type": "stat_modifier",
+		"stat": "defense",
+		"operation": "multiply",
+		"value": 0.85
+	},
+	
+	# 风系特殊效果
+	"multi_wind_blades": {
+		"type": "attack_modifier",
+		"property": "multi_shot",
+		"value": 3
+	},
+	"capture_range_30": {
+		"type": "attack_modifier",
+		"property": "attack_range",
+		"value": 1.30
+	},
+	"pull_to_center": {
+		"type": "special",
+		"effect_type": "pull_to_center",
+		"force": 100.0
+	},
+	"wind_blades_bounce_1": {
+		"type": "attack_modifier",
+		"property": "bounce_count",
+		"value": 1
+	},
+	"reveal_nearby": {
+		"type": "special",
+		"effect_type": "reveal_nearby",
+		"range": 100.0
+	},
+	"dodge_chance_50": {
+		"type": "special",
+		"effect_type": "dodge_chance",
+		"chance": 0.50
+	},
+	"ricochet_count_2": {
+		"type": "attack_modifier",
+		"property": "bounce_count",
+		"value": 2
+	},
+	"attack_speed_aura_5": {
+		"type": "special",
+		"effect_type": "attack_speed_aura",
+		"bonus": 0.05,
+		"range": 150.0
+	},
+	"attack_speed_aura_8": {
+		"type": "special",
+		"effect_type": "attack_speed_aura",
+		"bonus": 0.08,
+		"range": 150.0
+	},
+	"attack_speed_aura_12": {
+		"type": "special",
+		"effect_type": "attack_speed_aura",
+		"bonus": 0.12,
+		"range": 150.0
+	},
+	"attack_speed_reduction_10": {
+		"type": "stat_modifier",
+		"stat": "attack_speed",
+		"operation": "multiply",
+		"value": 0.90
+	},
+	"da_chance_5": {
+		"type": "stat_modifier",
+		"stat": "da_bonus",
+		"operation": "add",
+		"value": 0.05
+	},
+	"ta_chance_3": {
+		"type": "stat_modifier",
+		"stat": "ta_bonus",
+		"operation": "add",
+		"value": 0.03
+	},
+	"fast_ricochet": {
+		"type": "attack_modifier",
+		"property": "projectile_speed",
+		"value": 2.0
+	},
+	"piercing_attack": {
+		"type": "attack_modifier",
+		"property": "piercing",
+		"value": true
+	},
+	"multi_target_2_50": {
+		"type": "attack_modifier",
+		"property": "chain_targets",
+		"value": 2,
+		"damage_multiplier": 0.5
+	},
+	"tornado_4s": {
+		"type": "special",
+		"effect_type": "tornado",
+		"duration": 4.0
+	},
+	"imprison_enemies": {
+		"type": "special",
+		"effect_type": "imprison",
+		"duration": 4.0
+	},
+	"knockback_on_end": {
+		"type": "special",
+		"effect_type": "knockback_on_end",
+		"force": 200.0
+	},
+	"hurricane_summon": {
+		"type": "special",
+		"effect_type": "hurricane",
+		"duration": 5.0
+	},
+	"pull_and_damage": {
+		"type": "special",
+		"effect_type": "pull_and_damage",
+		"pull_force": 50.0,
+		"damage_per_second": 20.0
+	},
+	"flying_debuff_20": {
+		"type": "special",
+		"effect_type": "flying_debuff",
+		"speed_reduction": 0.20,
+		"attack_speed_reduction": 0.20
+	},
+	"exile_8s": {
+		"type": "special",
+		"effect_type": "exile",
+		"duration": 8.0
+	},
+	"damage_on_return": {
+		"type": "special",
+		"effect_type": "damage_on_return",
+		"damage_multiplier": 1.0
+	},
+	"boss_immune": {
+		"type": "special",
+		"effect_type": "boss_immune"
+	},
+	"no_damage": {
+		"type": "attack_modifier",
+		"property": "damage",
+		"value": 0.0
+	},
+	"ally_attack_speed_30": {
+		"type": "special",
+		"effect_type": "ally_attack_speed_aura",
+		"bonus": 0.30,
+		"range": 200.0
+	},
+	"bonus_damage_20_on_end": {
+		"type": "special",
+		"effect_type": "bonus_damage_on_end",
+		"damage_multiplier": 0.20
 	}
 }
 
@@ -1758,5 +3275,456 @@ const tower_mechanics := {
 		"reduction_amount": 0.05,
 		"max_stacks": 10,
 		"duration": 5.0
+	},
+	
+	# 光元素效果
+	"blind_chance_15_1.5s": {
+		"type": "chance_effect",
+		"effect": "blind",
+		"chance": 0.15,
+		"duration": 1.5,
+		"miss_chance": 0.50
+	},
+	"purify_1_buff": {
+		"type": "purify",
+		"remove_buffs": 1,
+		"energy_return": 5
+	},
+	"judgment_1_target": {
+		"type": "judgment",
+		"damage_multiplier": 1.20,
+		"duration": 5.0
+	},
+	"reveal_stealth": {
+		"type": "reveal",
+		"reveal_range": 120.0,
+		"duration": 3.0
+	},
+	"blind_stealth_2s": {
+		"type": "blind",
+		"duration": 2.0,
+		"miss_chance": 0.50,
+		"target_stealth": true
+	},
+	"blind_area_1.5s": {
+		"type": "area_effect",
+		"effect": "blind",
+		"radius": 85.0,
+		"duration": 1.5,
+		"miss_chance": 0.50
+	},
+	"blind_chance_bounce_20": {
+		"type": "chance_effect",
+		"effect": "blind",
+		"chance": 0.20,
+		"duration": 1.5,
+		"miss_chance": 0.50,
+		"trigger": "bounce"
+	},
+	"heal_ally_towers_5s": {
+		"type": "heal",
+		"target": "allies",
+		"heal_amount": 25.0,
+		"radius": 150.0,
+		"interval": 5.0
+	},
+	"blind_target": {
+		"type": "blind",
+		"duration": 1.5,
+		"miss_chance": 0.50
+	},
+	"blind_chance_30_2s": {
+		"type": "chance_effect",
+		"effect": "blind",
+		"chance": 0.30,
+		"duration": 2.0,
+		"miss_chance": 0.50
+	},
+	"judgment_target": {
+		"type": "judgment",
+		"damage_multiplier": 1.20,
+		"duration": 5.0
+	},
+	"purify_all_buffs": {
+		"type": "purify",
+		"remove_buffs": -1,  # -1 means all buffs
+		"heal_amount": 15.0
+	},
+	"heal_friendly_towers": {
+		"type": "heal",
+		"target": "towers",
+		"heal_amount": 30.0,
+		"radius": 100.0
+	},
+	"judgment_area": {
+		"type": "area_effect",
+		"effect": "judgment",
+		"radius": 60.0,
+		"damage_multiplier": 1.20,
+		"duration": 5.0
+	},
+	"reveal_all_enemies": {
+		"type": "reveal",
+		"reveal_range": 200.0,
+		"duration": 4.0,
+		"reveal_all": true
+	},
+	"blind_all_stealth": {
+		"type": "blind",
+		"duration": 2.0,
+		"miss_chance": 0.50,
+		"target_stealth": true,
+		"area": true,
+		"radius": 120.0
+	},
+	"judgment_spread": {
+		"type": "judgment",
+		"damage_multiplier": 1.20,
+		"duration": 5.0,
+		"spread_on_death": true,
+		"spread_radius": 50.0,
+		"spread_damage": 30.0
+	},
+	"heal_towers_blind_enemies": {
+		"type": "combo_effect",
+		"effects": ["heal_towers", "blind_enemies"],
+		"heal_amount": 25.0,
+		"heal_radius": 100.0,
+		"blind_radius": 85.0,
+		"blind_duration": 1.5
+	},
+	"purify_bounce": {
+		"type": "purify",
+		"remove_buffs": 1,
+		"trigger": "bounce"
+	},
+	"blind_bounce": {
+		"type": "blind",
+		"duration": 1.5,
+		"miss_chance": 0.50,
+		"trigger": "bounce"
+	},
+	"purify_attack": {
+		"type": "purify",
+		"remove_buffs": 1,
+		"trigger": "attack",
+		"energy_return": 3
+	},
+	"energy_bonus_10": {
+		"type": "energy_bonus",
+		"bonus_amount": 10,
+		"trigger": "purify"
+	},
+	"defense_reduction_10": {
+		"type": "stat_modifier",
+		"stat": "defense",
+		"operation": "subtract",
+		"value": 10,
+		"duration": 4.0
+	},
+	"blind_chance_50_3s": {
+		"type": "chance_effect",
+		"effect": "blind",
+		"chance": 0.50,
+		"duration": 3.0,
+		"miss_chance": 0.50
+	},
+	"purify_heal_energy_return": {
+		"type": "purify",
+		"remove_buffs": 2,
+		"heal_amount": 20.0,
+		"energy_return": 8
+	},
+	"judgment_extra_damage": {
+		"type": "judgment",
+		"damage_multiplier": 1.40,
+		"duration": 5.0,
+		"holy_damage": true
+	},
+	"prioritize_judgment": {
+		"type": "targeting",
+		"priority": "judged",
+		"priority_multiplier": 2.0
+	},
+	"anti_stealth_blind": {
+		"type": "anti_stealth",
+		"reveal_range": 150.0,
+		"blind_duration": 2.0,
+		"blind_chance": 0.75
+	},
+	"judgment_spread_holy": {
+		"type": "judgment",
+		"damage_multiplier": 1.30,
+		"duration": 5.0,
+		"spread_on_death": true,
+		"spread_radius": 75.0,
+		"spread_damage": 40.0,
+		"holy_damage": true
+	},
+	"mass_heal_judgment": {
+		"type": "combo_effect",
+		"effects": ["mass_heal", "area_judgment"],
+		"heal_amount": 40.0,
+		"heal_radius": 120.0,
+		"judgment_radius": 100.0,
+		"judgment_multiplier": 1.25
+	},
+	"bounce_judgment_spread": {
+		"type": "bounce_effect",
+		"effect": "judgment",
+		"damage_multiplier": 1.20,
+		"spread_on_hit": true,
+		"spread_radius": 40.0
+	},
+	"continuous_heal_purify_energy": {
+		"type": "aura_effect",
+		"interval": 3.0,
+		"effects": ["heal", "purify", "energy_return"],
+		"heal_amount": 15.0,
+		"heal_radius": 100.0,
+		"energy_return": 5
+	},
+	"defense_reduction_15": {
+		"type": "stat_modifier",
+		"stat": "defense",
+		"operation": "subtract",
+		"value": 15,
+		"duration": 5.0
+	},
+	"judgment_holy_damage": {
+		"type": "judgment",
+		"damage_multiplier": 1.25,
+		"duration": 5.0,
+		"holy_damage": true
+	},
+	
+	# 暗元素效果 - 腐蚀
+	"corrosion_1": {
+		"type": "debuff",
+		"debuff_type": "corrosion",
+		"stacks": 1,
+		"damage_per_second": 4.0,
+		"defense_reduction": 0.01,
+		"duration": 4.0
+	},
+	"corrosion_2": {
+		"type": "debuff",
+		"debuff_type": "corrosion",
+		"stacks": 2,
+		"damage_per_second": 4.0,
+		"defense_reduction": 0.01,
+		"duration": 4.0
+	},
+	"corrosion_3": {
+		"type": "debuff",
+		"debuff_type": "corrosion",
+		"stacks": 3,
+		"damage_per_second": 4.0,
+		"defense_reduction": 0.01,
+		"duration": 4.0
+	},
+	
+	# 暗元素效果 - 生命偷取
+	"life_steal_30": {
+		"type": "special",
+		"effect_type": "life_steal",
+		"percentage": 0.30
+	},
+	"life_steal_50": {
+		"type": "special",
+		"effect_type": "life_steal",
+		"percentage": 0.50
+	},
+	"life_steal_100": {
+		"type": "special",
+		"effect_type": "life_steal",
+		"percentage": 1.0
+	},
+	
+	# 暗元素效果 - 治疗效果降低
+	"healing_reduction_50": {
+		"type": "debuff",
+		"debuff_type": "healing_reduction",
+		"reduction_percent": 0.50,
+		"duration": 4.0
+	},
+	"healing_reduction_25": {
+		"type": "debuff",
+		"debuff_type": "healing_reduction",
+		"reduction_percent": 0.25,
+		"duration": 4.0
+	},
+	"healing_reduction_30": {
+		"type": "debuff",
+		"debuff_type": "healing_reduction",
+		"reduction_percent": 0.30,
+		"duration": 4.0
+	},
+	
+	# 暗元素效果 - 死亡传染
+	"death_contagion": {
+		"type": "special",
+		"effect_type": "death_contagion",
+		"contagion_radius": 80.0,
+		"contagion_stacks": 1
+	},
+	
+	# 暗元素效果 - 恐惧
+	"fear_chance_50_2s": {
+		"type": "special",
+		"effect_type": "chance_fear",
+		"chance": 0.50,
+		"duration": 2.0,
+		"miss_chance": 0.50
+	},
+	"fear_chance_20_1.5s": {
+		"type": "special",
+		"effect_type": "chance_fear",
+		"chance": 0.20,
+		"duration": 1.5,
+		"miss_chance": 0.50
+	},
+	"fear_chance_15": {
+		"type": "special",
+		"effect_type": "chance_fear",
+		"chance": 0.15,
+		"duration": 2.0,
+		"miss_chance": 0.50
+	},
+	
+	# 暗元素效果 - 生命虹吸
+	"life_drain_10": {
+		"type": "debuff",
+		"debuff_type": "life_drain",
+		"drain_percent": 0.10,
+		"duration": 3.0
+	},
+	"life_drain_15": {
+		"type": "debuff",
+		"debuff_type": "life_drain",
+		"drain_percent": 0.15,
+		"duration": 3.0
+	},
+	"life_drain_20": {
+		"type": "debuff",
+		"debuff_type": "life_drain",
+		"drain_percent": 0.20,
+		"duration": 3.0
+	},
+	"life_drain_25": {
+		"type": "debuff",
+		"debuff_type": "life_drain",
+		"drain_percent": 0.25,
+		"duration": 3.0
+	},
+	"life_drain_30": {
+		"type": "debuff",
+		"debuff_type": "life_drain",
+		"drain_percent": 0.30,
+		"duration": 3.0
+	},
+	
+	# 暗元素特殊效果
+	"channel_life_drain": {
+		"type": "special",
+		"effect_type": "channel_life_drain",
+		"drain_percent": 0.15,
+		"channel_duration": 3.0
+	},
+	"fear_area_detection": {
+		"type": "special",
+		"effect_type": "fear_area",
+		"radius": 120.0,
+		"duration": 2.0
+	},
+	"no_healing": {
+		"type": "special",
+		"effect_type": "no_healing",
+		"duration": 5.0
+	},
+	"all_towers_life_steal": {
+		"type": "special",
+		"effect_type": "global_life_steal",
+		"percentage": 0.10,
+		"duration": 3.0
+	},
+	"corrosion_aura": {
+		"type": "special",
+		"effect_type": "corrosion_aura",
+		"radius": 95.0,
+		"stacks": 1,
+		"interval": 2.0
+	},
+	"life_drain_aura_5": {
+		"type": "special",
+		"effect_type": "life_drain_aura",
+		"radius": 95.0,
+		"drain_percent": 0.05
+	},
+	"life_drain_aura_10": {
+		"type": "special",
+		"effect_type": "life_drain_aura",
+		"radius": 95.0,
+		"drain_percent": 0.10
+	},
+	"permanent_attack_steal": {
+		"type": "special",
+		"effect_type": "permanent_stat_steal",
+		"stat": "damage",
+		"steal_amount": 1.0
+	},
+	"area_life_steal": {
+		"type": "special",
+		"effect_type": "area_life_steal",
+		"radius": 100.0,
+		"percentage": 0.15
+	},
+	"life_cost_10": {
+		"type": "special",
+		"effect_type": "life_cost",
+		"percentage": 0.10
+	},
+	"life_cost_5": {
+		"type": "special",
+		"effect_type": "life_cost",
+		"percentage": 0.05
+	},
+	"massive_damage": {
+		"type": "special",
+		"effect_type": "damage_multiplier",
+		"multiplier": 3.0
+	},
+	"fear_on_hit": {
+		"type": "special",
+		"effect_type": "fear_on_hit",
+		"chance": 0.30,
+		"duration": 2.0
+	},
+	"stealth_life_drain": {
+		"type": "special",
+		"effect_type": "stealth_life_drain",
+		"drain_percent": 0.20,
+		"duration": 3.0
+	},
+	"stat_steal_on_death_10": {
+		"type": "special",
+		"effect_type": "stat_steal_on_death",
+		"attack_steal": 0.10,
+		"defense_steal": 0.10
+	},
+	"damage_multiplier_5": {
+		"type": "special",
+		"effect_type": "damage_multiplier",
+		"multiplier": 5.0
+	},
+	"prioritize_unfeared": {
+		"type": "special",
+		"effect_type": "targeting_priority",
+		"priority": "unfeared",
+		"priority_multiplier": 2.0
+	},
+	"infinite_duration": {
+		"type": "special",
+		"effect_type": "infinite_duration"
 	}
 }

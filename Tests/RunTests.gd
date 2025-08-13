@@ -60,7 +60,16 @@ func run_complete_test_suite():
 		overall_success = false
 	inventory_suite.queue_free()
 	
-	# 5. 运行战斗集成测试
+	# 5. 运行冰元素系统测试
+	print("\n>>> 运行冰元素宝石系统测试")
+	var ice_suite = IceGemSystemTest.new()
+	var ice_result = ice_suite.run_all_tests()
+	detailed_results["IceGemSystem"] = ice_result
+	if ice_result.failed > 0:
+		overall_success = false
+	ice_suite.queue_free()
+	
+	# 6. 运行战斗集成测试
 	print("\n>>> 运行战斗集成测试")
 	var combat_suite = CombatIntegrationTests.new()
 	var combat_result = combat_suite.run_all_tests()
