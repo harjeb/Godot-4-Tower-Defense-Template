@@ -18,6 +18,13 @@ var frame_counter: int = 0
 var effect_pool: EffectPool
 var active_effects_by_target: Dictionary = {}
 
+# 敌人查找缓存系统
+var enemy_cache: Array = []
+var enemy_cache_last_update: int = 0
+var enemy_cache_update_interval: int = 5  # 每5帧更新一次缓存
+var tower_cache: Array = []
+var tower_cache_last_update: int = 0
+
 # 效果类型到更新频率的映射
 const EFFECT_UPDATE_FREQUENCY = {
 	# 高频率 - 影响游戏手感的效果
@@ -70,6 +77,9 @@ func _process(delta: float) -> void:
 	
 	frame_counter += 1
 	
+	# 内存监控
+	_monitor_memory()
+	
 	# 高频效果 - 每帧更新
 	process_effect_group("high_freq", delta)
 	
@@ -80,6 +90,17 @@ func _process(delta: float) -> void:
 	# 低频效果 - 每30帧更新  
 	if frame_counter % 30 == 0:
 		process_effect_group("low_freq", delta * 30)
+	
+	# 定期输出系统健康状态（调试模式下）
+	if debug_mode and frame_counter % 1800 == 0:  # 每30秒（假设60FPS）
+		var health_score = _calculate_system_health_score(get_performance_stats())
+		_log_info("System health check", {"health_score": health_score})
+		
+		if health_score < 60:
+			_log_warning("System health degraded", {
+				"health_score": health_score,
+				"suggestions_available": get_memory_optimization_suggestions().size()
+			})
 
 func process_effect_group(group_name: String, delta_time: float) -> void:
 	var effects = effect_groups[group_name]
@@ -119,11 +140,49 @@ func remove_effect_at_index(group_name: String, index: int) -> void:
 
 ## 公共API
 
-# 应用效果到目标
+# 应用效果到目标 - 增强错误处理
 func apply_effect(target: Node, effect_type: String, duration: float, stacks: int = 1) -> void:
+	# 输入验证
 	if not is_instance_valid(target):
-		push_warning("Cannot apply effect to invalid target")
+		_log_error("Cannot apply effect to invalid target", {
+			"effect_type": effect_type,
+			"duration": duration,
+			"stacks": stacks
+		})
 		return
+	
+	if effect_type.is_empty():
+		_log_error("Cannot apply effect with empty effect_type", {
+			"target": target.name if target.has_method("get") else "unknown",
+			"duration": duration,
+			"stacks": stacks
+		})
+		return
+	
+	if duration < 0:
+		_log_warning("Negative duration for effect", {
+			"effect_type": effect_type,
+			"duration": duration,
+			"target": target.name if target.has_method("get") else "unknown"
+		})
+		duration = 0.0
+	
+	if stacks <= 0:
+		_log_warning("Invalid stack count for effect", {
+			"effect_type": effect_type,
+			"stacks": stacks,
+			"target": target.name if target.has_method("get") else "unknown"
+		})
+		stacks = 1
+	
+	_log_info("Applying effect", {
+		"effect_type": effect_type,
+		"target": target.name if target.has_method("get") else "unknown",
+		"duration": duration,
+		"stacks": stacks
+	})
+	
+	var start_time = Time.get_time_dict_from_system()
 	
 	# 检查是否已有相同类型的效果
 	var existing_effect = find_effect_on_target(target, effect_type)
@@ -132,13 +191,39 @@ func apply_effect(target: Node, effect_type: String, duration: float, stacks: in
 		# 刷新持续时间并叠加层数
 		existing_effect.refresh_duration(duration)
 		existing_effect.add_stack(stacks)
+		_log_info("Effect refreshed", {
+			"effect_type": effect_type,
+			"new_stacks": existing_effect.stacks,
+			"new_duration": existing_effect.duration
+		})
 	else:
 		# 创建新效果
+		if not effect_pool:
+			_log_error("Effect pool is null, cannot create effect", {
+				"effect_type": effect_type,
+				"target": target.name if target.has_method("get") else "unknown"
+			})
+			return
+		
 		var effect = effect_pool.get_effect(effect_type)
+		if not effect:
+			_log_error("Failed to get effect from pool", {
+				"effect_type": effect_type,
+				"pool_size": effect_pool.get_pool_size() if effect_pool else "null"
+			})
+			return
+		
 		effect.initialize(target, effect_type, duration, stacks)
 		
 		# 添加到对应频率组
 		var frequency = EFFECT_UPDATE_FREQUENCY.get(effect_type, "mid_freq")
+		if not effect_groups.has(frequency):
+			_log_error("Invalid frequency group", {
+				"effect_type": effect_type,
+				"frequency": frequency
+			})
+			return
+		
 		effect_groups[frequency].append(effect)
 		
 		# 记录到目标效果表
@@ -147,6 +232,19 @@ func apply_effect(target: Node, effect_type: String, duration: float, stacks: in
 		active_effects_by_target[target].append(effect)
 		
 		effect_applied.emit(target, effect_type)
+		_log_info("New effect created", {
+			"effect_type": effect_type,
+			"frequency": frequency,
+			"pool_size_after": effect_pool.get_pool_size() if effect_pool else "null"
+		})
+	
+	# 性能监控
+	var end_time = Time.get_time_dict_from_system()
+	var duration_ms = (end_time.second * 1000 + end_time.millisecond) - (start_time.second * 1000 + start_time.millisecond)
+	_log_performance("apply_effect", duration_ms, {
+		"effect_type": effect_type,
+		"existing_effect": existing_effect != null
+	})
 
 # 移除目标上的特定效果
 func remove_effect(target: Node, effect_type: String) -> bool:
@@ -202,11 +300,105 @@ func _on_game_paused(paused: bool) -> void:
 	# 游戏暂停时停止处理效果
 	set_process(not paused)
 
-# 性能监控
+# 详细的错误日志系统
+var debug_mode: bool = false
+var error_log: Array = []
+var warning_log: Array = []
+var performance_log: Array = []
+var max_log_entries: int = 100
+
+# 启用/禁用调试模式
+func set_debug_mode(enabled: bool) -> void:
+	debug_mode = enabled
+	if debug_mode:
+		_log_info("GemEffectSystem: Debug mode enabled")
+
+# 详细日志记录方法
+func _log_error(message: String, context: Dictionary = {}) -> void:
+	var log_entry = {
+		"timestamp": Time.get_time_string_from_system(),
+		"frame": frame_counter,
+		"message": message,
+		"context": context
+	}
+	error_log.append(log_entry)
+	
+	# 限制日志大小
+	if error_log.size() > max_log_entries:
+		error_log.pop_front()
+	
+	push_error("GemEffectSystem ERROR [Frame %d]: %s" % [frame_counter, message])
+	if debug_mode and not context.is_empty():
+		print("  Context: ", context)
+
+func _log_warning(message: String, context: Dictionary = {}) -> void:
+	var log_entry = {
+		"timestamp": Time.get_time_string_from_system(),
+		"frame": frame_counter,
+		"message": message,
+		"context": context
+	}
+	warning_log.append(log_entry)
+	
+	if warning_log.size() > max_log_entries:
+		warning_log.pop_front()
+	
+	push_warning("GemEffectSystem WARNING [Frame %d]: %s" % [frame_counter, message])
+	if debug_mode and not context.is_empty():
+		print("  Context: ", context)
+
+func _log_info(message: String, context: Dictionary = {}) -> void:
+	if debug_mode:
+		print("GemEffectSystem INFO [Frame %d]: %s" % [frame_counter, message])
+		if not context.is_empty():
+			print("  Context: ", context)
+
+func _log_performance(operation: String, duration_ms: float, details: Dictionary = {}) -> void:
+	var log_entry = {
+		"timestamp": Time.get_time_string_from_system(),
+		"frame": frame_counter,
+		"operation": operation,
+		"duration_ms": duration_ms,
+		"details": details
+	}
+	performance_log.append(log_entry)
+	
+	if performance_log.size() > max_log_entries:
+		performance_log.pop_front()
+	
+	if duration_ms > 1.0:  # 记录超过1ms的操作
+		_log_warning("Slow operation detected: %s took %.3f ms" % [operation, duration_ms], details)
+
+# 性能监控 - 增强版
 func get_performance_stats() -> Dictionary:
 	var total_effects = 0
-	for group in effect_groups.values():
+	var effects_by_type = {}
+	
+	# 统计各组效果
+	for group_name in effect_groups.keys():
+		var group = effect_groups[group_name]
 		total_effects += group.size()
+		
+		# 按类型统计效果
+		for effect in group:
+			var effect_type = effect.effect_type if effect.has_method("get") else "unknown"
+			if not effects_by_type.has(effect_type):
+				effects_by_type[effect_type] = 0
+			effects_by_type[effect_type] += 1
+	
+	var cache_stats = {
+		"enemy_cache_size": enemy_cache.size(),
+		"tower_cache_size": tower_cache.size(),
+		"cache_update_interval": enemy_cache_update_interval,
+		"last_enemy_cache_update": frame_counter - enemy_cache_last_update,
+		"last_tower_cache_update": frame_counter - tower_cache_last_update
+	}
+	
+	var memory_stats = {
+		"effect_pool_memory_mb": effect_pool._estimate_memory_usage() if effect_pool else 0.0,
+		"cache_memory_estimate_kb": (enemy_cache.size() + tower_cache.size()) * 0.1,  # 粗略估算
+		"active_targets": active_effects_by_target.size()
+	}
 	
 	return {
 		"total_effects": total_effects,
@@ -214,18 +406,225 @@ func get_performance_stats() -> Dictionary:
 		"mid_freq_effects": effect_groups["mid_freq"].size(), 
 		"low_freq_effects": effect_groups["low_freq"].size(),
 		"targets_with_effects": active_effects_by_target.size(),
-		"pooled_effects": effect_pool.get_pool_size()
+		"pooled_effects": effect_pool.get_pool_size() if effect_pool else 0,
+		"effects_by_type": effects_by_type,
+		"cache_stats": cache_stats,
+		"memory_stats": memory_stats,
+		"error_count": error_log.size(),
+		"warning_count": warning_log.size(),
+		"performance_issues": _count_performance_issues()
 	}
 
-# 调试信息
+func _count_performance_issues() -> int:
+	var count = 0
+	for entry in performance_log:
+		if entry.duration_ms > 1.0:
+			count += 1
+	return count
+
+# 内存监控系统
+var memory_monitor_timer: float = 0.0
+var memory_monitor_interval: float = 10.0  # 每10秒检查一次
+var memory_history: Array = []
+var max_memory_history: int = 60  # 保存10分钟历史（每10秒一次）
+
+func _monitor_memory() -> void:
+	memory_monitor_timer += get_process_delta_time()
+	
+	if memory_monitor_timer >= memory_monitor_interval:
+		memory_monitor_timer = 0.0
+		
+		var memory_snapshot = _create_memory_snapshot()
+		memory_history.append(memory_snapshot)
+		
+		# 限制历史记录数量
+		if memory_history.size() > max_memory_history:
+			memory_history.pop_front()
+		
+		# 检查内存趋势和警告
+		_check_memory_warnings(memory_snapshot)
+
+func _create_memory_snapshot() -> Dictionary:
+	var stats = get_performance_stats()
+	
+	return {
+		"timestamp": Time.get_time_string_from_system(),
+		"frame": frame_counter,
+		"total_effects": stats.total_effects,
+		"active_targets": stats.targets_with_effects,
+		"pool_memory_mb": stats.memory_stats.effect_pool_memory_mb,
+		"cache_memory_kb": stats.memory_stats.cache_memory_estimate_kb,
+		"enemy_cache_size": stats.cache_stats.enemy_cache_size,
+		"tower_cache_size": stats.cache_stats.tower_cache_size,
+		"error_count": stats.error_count,
+		"warning_count": stats.warning_count,
+		"performance_issues": stats.performance_issues
+	}
+
+func _check_memory_warnings(snapshot: Dictionary) -> void:
+	# 检查内存使用过高
+	if snapshot.pool_memory_mb > 10.0:  # 超过10MB
+		_log_warning("High memory usage detected", {
+			"pool_memory_mb": snapshot.pool_memory_mb,
+			"total_effects": snapshot.total_effects
+		})
+	
+	# 检查错误增长趋势
+	if memory_history.size() >= 3:
+		var prev_snapshot = memory_history[memory_history.size() - 2]
+		var error_increase = snapshot.error_count - prev_snapshot.error_count
+		
+		if error_increase > 5:  # 10秒内超过5个新错误
+			_log_warning("High error rate detected", {
+				"error_increase": error_increase,
+				"total_errors": snapshot.error_count
+			})
+	
+	# 检查内存泄漏趋势
+	if memory_history.size() >= 6:  # 至少1分钟历史
+		var memory_trend = _analyze_memory_trend()
+		if memory_trend.slope > 0.5:  # 每10秒增长0.5MB
+			_log_warning("Potential memory leak detected", {
+				"memory_trend_slope": memory_trend.slope,
+				"current_memory_mb": snapshot.pool_memory_mb
+			})
+
+func _analyze_memory_trend() -> Dictionary:
+	if memory_history.size() < 3:
+		return {"slope": 0.0, "correlation": 0.0}
+	
+	var recent_history = memory_history.slice(-6)  # 最近6次记录
+	var n = recent_history.size()
+	var sum_x = 0.0
+	var sum_y = 0.0
+	var sum_xy = 0.0
+	var sum_x2 = 0.0
+	
+	for i in range(n):
+		var x = float(i)
+		var y = recent_history[i].pool_memory_mb
+		sum_x += x
+		sum_y += y
+		sum_xy += x * y
+		sum_x2 += x * x
+	
+	# 计算线性回归斜率
+	var denominator = n * sum_x2 - sum_x * sum_x
+	var slope = 0.0
+	if denominator != 0:
+		slope = (n * sum_xy - sum_x * sum_y) / denominator
+	
+	return {"slope": slope, "samples": n}
+
+# 内存优化建议
+func get_memory_optimization_suggestions() -> Array:
+	var suggestions = []
+	var stats = get_performance_stats()
+	
+	# 基于当前状态生成建议
+	if stats.memory_stats.effect_pool_memory_mb > 5.0:
+		suggestions.append({
+			"type": "memory",
+			"message": "Consider reducing effect pool max size or implementing more aggressive cleanup",
+			"priority": "high"
+		})
+	
+	if stats.cache_stats.enemy_cache_size > 200:
+		suggestions.append({
+			"type": "cache",
+			"message": "Large enemy cache detected, consider reducing cache update interval",
+			"priority": "medium"
+		})
+	
+	if stats.performance_issues > 10:
+		suggestions.append({
+			"type": "performance",
+			"message": "Multiple performance issues detected, review effect processing frequency",
+			"priority": "high"
+		})
+	
+	if stats.error_count > 50:
+		suggestions.append({
+			"type": "stability",
+			"message": "High error count, review error logs for recurring issues",
+			"priority": "critical"
+		})
+	
+	return suggestions
+
+# 生成内存报告
+func generate_memory_report() -> Dictionary:
+	var stats = get_performance_stats()
+	var suggestions = get_memory_optimization_suggestions()
+	var trend = _analyze_memory_trend() if memory_history.size() >= 3 else {"slope": 0.0}
+	
+	return {
+		"current_stats": stats,
+		"memory_history": memory_history,
+		"memory_trend": trend,
+		"optimization_suggestions": suggestions,
+		"health_score": _calculate_system_health_score(stats)
+	}
+
+func _calculate_system_health_score(stats: Dictionary) -> int:
+	var score = 100
+	
+	# 内存使用扣分
+	if stats.memory_stats.effect_pool_memory_mb > 10.0:
+		score -= 30
+	elif stats.memory_stats.effect_pool_memory_mb > 5.0:
+		score -= 15
+	
+	# 错误扣分
+	if stats.error_count > 50:
+		score -= 25
+	elif stats.error_count > 20:
+		score -= 10
+	
+	# 性能问题扣分
+	if stats.performance_issues > 10:
+		score -= 20
+	elif stats.performance_issues > 5:
+		score -= 10
+	
+	# 确保分数在0-100范围内
+	return max(0, min(100, score))
+
+# 调试信息 - 全面升级版
 func print_debug_info() -> void:
 	var stats = get_performance_stats()
-	print("GemEffectSystem Debug:")
-	print("  Total Effects: ", stats.total_effects)
-	print("  High Freq: ", stats.high_freq_effects)
-	print("  Mid Freq: ", stats.mid_freq_effects)
-	print("  Low Freq: ", stats.low_freq_effects)
-	print("  Affected Targets: ", stats.targets_with_effects)
+	var health_score = _calculate_system_health_score(stats)
+	var suggestions = get_memory_optimization_suggestions()
+	
+	print("\n=== GemEffectSystem Debug Report ===")
+	print("System Health Score: %d/100" % health_score)
+	print("\nEffect Statistics:")
+	print("  Total Effects: %d" % stats.total_effects)
+	print("  High Freq: %d" % stats.high_freq_effects)
+	print("  Mid Freq: %d" % stats.mid_freq_effects)
+	print("  Low Freq: %d" % stats.low_freq_effects)
+	print("  Affected Targets: %d" % stats.targets_with_effects)
+	
+	print("\nMemory Usage:")
+	print("  Effect Pool: %.2f MB" % stats.memory_stats.effect_pool_memory_mb)
+	print("  Cache: %.2f KB" % stats.memory_stats.cache_memory_estimate_kb)
+	
+	print("\nCache Statistics:")
+	print("  Enemy Cache: %d entities" % stats.cache_stats.enemy_cache_size)
+	print("  Tower Cache: %d entities" % stats.cache_stats.tower_cache_size)
+	print("  Last Enemy Update: %d frames ago" % stats.cache_stats.last_enemy_cache_update)
+	
+	print("\nSystem Issues:")
+	print("  Errors: %d" % stats.error_count)
+	print("  Warnings: %d" % stats.warning_count)
+	print("  Performance Issues: %d" % stats.performance_issues)
+	
+	if not suggestions.is_empty():
+		print("\nOptimization Suggestions:")
+		for suggestion in suggestions:
+			print("  [%s] %s" % [suggestion.priority.to_upper(), suggestion.message])
+	
+	print("=" * 40)
 
 # 冰元素特效方法
 
@@ -265,22 +664,113 @@ func apply_frozen_damage_bonus(base_damage: float, target: Node) -> float:
 		return base_damage * 3.0  # 3倍伤害
 	return base_damage
 
-# 辅助方法：获取区域内的敌人
+# 缓存管理方法
+
+# 更新敌人缓存
+func _update_enemy_cache() -> void:
+	if frame_counter - enemy_cache_last_update >= enemy_cache_update_interval:
+		var tree = get_tree()
+		if not tree or not tree.current_scene:
+			enemy_cache.clear()
+			return
+		
+		# 获取所有敌人并过滤有效的
+		var all_enemies = tree.current_scene.get_tree().get_nodes_in_group("enemy")
+		enemy_cache.clear()
+		
+		for enemy in all_enemies:
+			if is_instance_valid(enemy) and enemy.has_method("global_position"):
+				enemy_cache.append(enemy)
+		
+		enemy_cache_last_update = frame_counter
+
+# 更新塔缓存
+func _update_tower_cache() -> void:
+	if frame_counter - tower_cache_last_update >= enemy_cache_update_interval:
+		var tree = get_tree()
+		if not tree or not tree.current_scene:
+			tower_cache.clear()
+			return
+		
+		var all_towers = tree.current_scene.get_tree().get_nodes_in_group("tower")
+		tower_cache.clear()
+		
+		for tower in all_towers:
+			if is_instance_valid(tower) and tower.has_method("global_position"):
+				tower_cache.append(tower)
+		
+		tower_cache_last_update = frame_counter
+
+# 优化版：获取区域内的敌人
 func get_enemies_in_area(center: Vector2, radius: float) -> Array:
-	var enemies = []
-	var tree = get_tree()
-	if not tree or not tree.current_scene:
-		return enemies
+	# 更新敌人缓存
+	_update_enemy_cache()
 	
-	# 查找所有敌人节点
-	var enemy_nodes = tree.current_scene.get_tree().get_nodes_in_group("enemy")
-	for enemy in enemy_nodes:
+	var enemies = []
+	var radius_squared = radius * radius  # 使用平方距离避免开方计算
+	
+	for enemy in enemy_cache:
 		if is_instance_valid(enemy):
-			var distance = enemy.global_position.distance_to(center)
-			if distance <= radius:
+			var distance_squared = enemy.global_position.distance_squared_to(center)
+			if distance_squared <= radius_squared:
 				enemies.append(enemy)
 	
 	return enemies
+
+# 获取区域内的塔
+func get_towers_in_area(center: Vector2, radius: float) -> Array:
+	_update_tower_cache()
+	
+	var towers = []
+	var radius_squared = radius * radius
+	
+	for tower in tower_cache:
+		if is_instance_valid(tower):
+			var distance_squared = tower.global_position.distance_squared_to(center)
+			if distance_squared <= radius_squared:
+				towers.append(tower)
+	
+	return towers
+
+# 快速查找最近的敌人
+func get_nearest_enemy(center: Vector2, max_range: float = INF) -> Node:
+	_update_enemy_cache()
+	
+	var nearest_enemy = null
+	var nearest_distance_squared = max_range * max_range
+	
+	for enemy in enemy_cache:
+		if is_instance_valid(enemy):
+			var distance_squared = enemy.global_position.distance_squared_to(center)
+			if distance_squared < nearest_distance_squared:
+				nearest_distance_squared = distance_squared
+				nearest_enemy = enemy
+	
+	return nearest_enemy
+
+# 批量区域查找优化
+func get_enemies_in_multiple_areas(areas: Array) -> Dictionary:
+	_update_enemy_cache()
+	
+	var results = {}
+	for i in range(areas.size()):
+		results[i] = []
+	
+	# 一次遍历处理所有区域
+	for enemy in enemy_cache:
+		if not is_instance_valid(enemy):
+			continue
+			
+		var enemy_pos = enemy.global_position
+		for i in range(areas.size()):
+			var area = areas[i]
+			var center = area.center
+			var radius_squared = area.radius * area.radius
+			
+			if enemy_pos.distance_squared_to(center) <= radius_squared:
+				results[i].append(enemy)
+	
+	return results
 
 # 应用冰霜弹射效果
 func apply_frost_on_bounce(target: Node, stacks: int = 1, duration: float = 4.0) -> void:
@@ -449,31 +939,17 @@ func apply_hurricane(center: Vector2, radius: float, duration: float = 5.0, pull
 
 # 应用攻击速度光环效果
 func apply_attack_speed_aura(center: Vector2, radius: float, speed_bonus: float) -> void:
-	var tree = get_tree()
-	if not tree or not tree.current_scene:
-		return
-	
-	var towers = tree.current_scene.get_tree().get_nodes_in_group("tower")
+	var towers = get_towers_in_area(center, radius)
 	for tower in towers:
-		if is_instance_valid(tower) and tower != self:
-			var distance = tower.global_position.distance_to(center)
-			if distance <= radius:
-				if tower.has_method("apply_attack_speed_bonus"):
-					tower.apply_attack_speed_bonus(speed_bonus)
+		if tower != self and tower.has_method("apply_attack_speed_bonus"):
+			tower.apply_attack_speed_bonus(speed_bonus)
 
 # 移除攻击速度光环效果
 func remove_attack_speed_aura(center: Vector2, radius: float) -> void:
-	var tree = get_tree()
-	if not tree or not tree.current_scene:
-		return
-	
-	var towers = tree.current_scene.get_tree().get_nodes_in_group("tower")
+	var towers = get_towers_in_area(center, radius)
 	for tower in towers:
-		if is_instance_valid(tower):
-			var distance = tower.global_position.distance_to(center)
-			if distance <= radius:
-				if tower.has_method("remove_attack_speed_bonus"):
-					tower.remove_attack_speed_bonus()
+		if tower.has_method("remove_attack_speed_bonus"):
+			tower.remove_attack_speed_bonus()
 
 # 检查目标是否被失衡
 func is_target_imbalanced(target: Node) -> bool:
@@ -543,31 +1019,17 @@ func apply_blind_stealth(center: Vector2, radius: float, duration: float = 1.5) 
 
 # 应用治疗到友方塔
 func heal_friendly_towers(center: Vector2, radius: float, heal_amount: float) -> void:
-	var tree = get_tree()
-	if not tree or not tree.current_scene:
-		return
-	
-	var towers = tree.current_scene.get_tree().get_nodes_in_group("tower")
+	var towers = get_towers_in_area(center, radius)
 	for tower in towers:
-		if is_instance_valid(tower) and tower != self:
-			var distance = tower.global_position.distance_to(center)
-			if distance <= radius:
-				if tower.has_method("heal"):
-					tower.heal(heal_amount)
+		if tower != self and tower.has_method("heal"):
+			tower.heal(heal_amount)
 
 # 应用能量返还到友方塔
 func restore_energy_to_towers(center: Vector2, radius: float, energy_amount: float) -> void:
-	var tree = get_tree()
-	if not tree or not tree.current_scene:
-		return
-	
-	var towers = tree.current_scene.get_tree().get_nodes_in_group("tower")
+	var towers = get_towers_in_area(center, radius)
 	for tower in towers:
-		if is_instance_valid(tower) and tower != self:
-			var distance = tower.global_position.distance_to(center)
-			if distance <= radius:
-				if tower.has_method("restore_energy"):
-					tower.restore_energy(energy_amount)
+		if tower != self and tower.has_method("restore_energy"):
+			tower.restore_energy(energy_amount)
 
 # 检查目标是否被致盲
 func is_target_blinded(target: Node) -> bool:
