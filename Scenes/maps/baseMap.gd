@@ -1,5 +1,10 @@
 extends Node2D
 
+# Import required classes
+const PassiveSynergyManager = preload("res://Scenes/systems/PassiveSynergyManager.gd")
+const MonsterSkillSystem = preload("res://Scenes/systems/MonsterSkillSystem.gd")
+const PerformanceMonitor = preload("res://Scenes/systems/PerformanceMonitor.gd")
+
 var map_type := "":
 	set(val):
 		map_type = val
@@ -14,12 +19,12 @@ var baseHP := baseMaxHp
 var gold := 100:
 	set(value):
 		gold = value
-		Globals.goldChanged.emit(value)
+		Globals.gold_changed.emit(value)
 
 func _ready():
-	Globals.turretsNode = $Turrets
-	Globals.projectilesNode = $Projectiles
-	Globals.currentMap = self
+	Globals.turrets_node = $Turrets
+	Globals.projectiles_node = $Projectiles
+	Globals.current_map = self
 	
 	# Initialize enhancement systems
 	initialize_enhancement_systems()
@@ -28,7 +33,7 @@ func get_base_damage(damage):
 	if gameOver:
 		return
 	baseHP -= damage
-	Globals.baseHpChanged.emit(baseHP, baseMaxHp)
+	Globals.base_hp_changed.emit(baseHP, baseMaxHp)
 	if baseHP <= 0:
 		gameOver = true
 		var gameOverPanelScene := preload("res://Scenes/ui/gameOver/game_over_panel.tscn")
@@ -60,10 +65,12 @@ func initialize_enhancement_systems():
 
 ## Handle performance warnings
 func _on_performance_warning(metric: String, current_value: float, threshold: float):
-	print("Performance Warning - %s: %.1f (threshold: %.1f)" % [metric, current_value, threshold])
-	# Could show UI warning to player
+	# 显示性能警告弹框
+	if ErrorHandler and ErrorHandler.has_method("show_warning"):
+		ErrorHandler.show_warning("性能警告: %s 当前值 %.1f (阈值: %.1f)" % [metric, current_value, threshold], "性能警告")
 
 ## Handle critical performance issues
 func _on_performance_critical(metric: String, current_value: float):
-	print("Performance Critical - %s: %.1f" % [metric, current_value])
-	# Could show UI warning and suggest reducing settings
+	# 显示严重性能问题弹框
+	if ErrorHandler and ErrorHandler.has_method("show_error"):
+		ErrorHandler.show_error("严重性能问题: %s 当前值 %.1f" % [metric, current_value], "性能错误")

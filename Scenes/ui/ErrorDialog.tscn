@@ -1,0 +1,90 @@
+[gd_scene load_steps=4 format=3 uid="uid://b1c2d3e4f5g6h7"]
+
+[ext_resource type="Script" path="res://Scenes/ui/ErrorDialog.gd" id="1_error_dialog"]
+
+[sub_resource type="StyleBoxFlat" id="stylebox"]
+bg_color = Color(0.1, 0.1, 0.1, 0.95)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.8, 0.2, 0.2, 1.0)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="button_style"]
+bg_color = Color(0.2, 0.2, 0.2, 1.0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.6, 0.6, 0.6, 1.0)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="ErrorDialog" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_error_dialog")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -100.0
+offset_right = 200.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("stylebox")
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+layout_mode = 2
+
+[node name="ErrorTitle" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "错误"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+
+[node name="ErrorLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "错误信息将显示在这里"
+fit_content = true
+
+[node name="OKButton" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "确定"
+theme_override_styles/normal = SubResource("button_style")
+theme_override_styles/hover = SubResource("button_style")
+theme_override_styles/pressed = SubResource("button_style")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]

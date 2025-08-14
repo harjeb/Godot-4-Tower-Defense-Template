@@ -30,7 +30,7 @@ func can_unlock_tech(tech_id: String) -> bool:
 			return false
 	
 	# Check cost
-	if Globals.currentMap and Globals.currentMap.gold < tech_data.cost:
+	if Globals.current_map and Globals.current_map.gold < tech_data.cost:
 		return false
 	
 	return true
@@ -52,8 +52,8 @@ func unlock_tech(tech_id: String) -> bool:
 		return false
 	
 	# Deduct cost
-	if Globals.currentMap:
-		Globals.currentMap.gold -= tech_data.cost
+	if Globals.current_map:
+		Globals.current_map.gold -= tech_data.cost
 	
 	# Mark as unlocked
 	unlocked_techs.append(tech_id)

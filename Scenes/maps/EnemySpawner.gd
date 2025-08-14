@@ -67,19 +67,19 @@ func _on_wave_delay_timer_timeout():
 		current_wave_spawn_count = round(wave_spawn_count * current_difficulty)
 		spawnable_enemies = get_spawnable_enemies()
 	
-	Globals.waveStarted.emit(current_wave, current_wave_spawn_count)
+	Globals.wave_started.emit(current_wave, current_wave_spawn_count)
 	$SpawnDelay.start()
 
 func enemy_destroyed():
 	killed_this_wave += 1
-	Globals.enemyDestroyed.emit(current_wave_spawn_count - killed_this_wave)
+	Globals.enemy_destroyed.emit(current_wave_spawn_count - killed_this_wave)
 	check_wave_clear()
 	
 func check_wave_clear():
 	if killed_this_wave == current_wave_spawn_count:
 		#Wave cleared
 		if not current_wave == max_waves:
-			Globals.waveCleared.emit($WaveDelayTimer.wait_time)
+			Globals.wave_cleared.emit($WaveDelayTimer.wait_time)
 			$WaveDelayTimer.start()
 			return
 		#game completion

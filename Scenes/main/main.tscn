@@ -6,7 +6,6 @@
 [ext_resource type="Script" uid="uid://brmqp6wit161p" path="res://Scenes/ui/turretUI/turrets_panel.gd" id="3_ryupq"]
 [ext_resource type="PackedScene" uid="uid://b7k8l9m0n4x" path="res://Scenes/ui/heroSystem/HeroSelection.tscn" id="4_hero_sel"]
 [ext_resource type="PackedScene" uid="uid://c9d8e7f6a5b" path="res://Scenes/ui/heroSystem/HeroInfoPanel.tscn" id="5_hero_info"]
-[ext_resource type="PackedScene" uid="uid://d8e9f0a1b2c" path="res://Scenes/ui/heroSystem/HeroTalentSelection.tscn" id="6_talent_sel"]
 
 [node name="main" type="Node2D"]
 script = ExtResource("1_22s4b")
@@ -82,7 +81,5 @@ visible = false
 [node name="HeroInfoPanel" parent="UI" instance=ExtResource("5_hero_info")]
 visible = false
 
-[node name="HeroTalentSelection" parent="UI" instance=ExtResource("6_talent_sel")]
-visible = false
 
 [connection signal="timeout" from="UI/HUD/WaveWaitTimer" to="UI/HUD" method="_on_wave_wait_timer_timeout"]

@@ -9,15 +9,16 @@ var inventory_ui: Node
 var weapon_wheel_ui: Node
 var gem_crafting_ui: Node
 var settings_ui: Node
+var error_dialog_ui: Node
 var ui_buttons_container: HBoxContainer
 
 func _ready():
 	Globals.hud = self
-	Globals.baseHpChanged.connect(update_hp)
-	Globals.goldChanged.connect(update_gold)
-	Globals.waveStarted.connect(show_wave_count)
-	Globals.waveCleared.connect(show_wave_timer)
-	Globals.enemyDestroyed.connect(update_enemy_count)
+	Globals.base_hp_changed.connect(update_hp)
+	Globals.gold_changed.connect(update_gold)
+	Globals.wave_started.connect(show_wave_count)
+	Globals.wave_cleared.connect(show_wave_timer)
+	Globals.enemy_destroyed.connect(update_enemy_count)
 	
 	# 初始化新 UI 系统
 	setup_new_ui_systems()
@@ -181,6 +182,12 @@ func create_ui_panels():
 	summon_stone_ui.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	summon_stone_ui.position = Vector2(50, -120)  # 放置在屏幕底部左侧
 	add_child(summon_stone_ui)
+	
+	# 创建错误对话框 UI
+	error_dialog_ui = preload("res://Scenes/ui/ErrorDialog.tscn").instantiate()
+	error_dialog_ui.hide()
+	error_dialog_ui.name = "ErrorDialogUI"
+	add_child(error_dialog_ui)
 
 func _input(event):
 	# 处理快捷键

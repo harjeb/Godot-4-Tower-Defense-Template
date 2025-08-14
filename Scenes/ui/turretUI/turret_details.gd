@@ -4,7 +4,7 @@ var turret : Node2D
 const sell_modifier := 0.7
 
 func _ready():
-	Globals.goldChanged.connect(check_can_upgrade)
+	Globals.gold_changed.connect(check_can_upgrade)
 	turret.turretUpdated.connect(set_props)
 	set_props()
 	animate_appear()
@@ -34,7 +34,7 @@ func set_props():
 
 func _on_upgrade_button_pressed():
 	if check_can_upgrade():
-		Globals.currentMap.gold -= get_upgrade_price()
+		Globals.current_map.gold -= get_upgrade_price()
 		turret.upgrade_turret()
 		check_can_upgrade()
 
@@ -52,13 +52,13 @@ func check_can_upgrade(_new_gold=0):
 		%UpgradeButton.text = "Maxed Out"
 		%UpgradeButton.disabled = true
 	else:
-		%UpgradeButton.disabled = Globals.currentMap.gold < get_upgrade_price()
+		%UpgradeButton.disabled = Globals.current_map.gold < get_upgrade_price()
 	return not %UpgradeButton.disabled
 
 
 func _on_sell_button_pressed():
 	queue_free()
-	Globals.currentMap.gold += get_sell_price()
+	Globals.current_map.gold += get_sell_price()
 	turret.queue_free()
 
 func _on_close_button_pressed():

@@ -85,7 +85,7 @@ func setup_hero_pool() -> void:
 		push_error("Hero data not available in Data.gd")
 		return
 	
-	available_hero_pool = Data.heroes.keys()
+	available_hero_pool.assign(Data.heroes.keys())
 	
 	# Ensure we have at least 5 heroes for selection system
 	if available_hero_pool.size() < 5:

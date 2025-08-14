@@ -8,10 +8,10 @@ var initial_pos := position
 var placeholder = null
 
 func _ready():
-	Globals.goldChanged.connect(check_can_purchase)
+	Globals.gold_changed.connect(check_can_purchase)
 
 func _gui_input(event):
-	if event is InputEventMouseButton and check_can_purchase(Globals.currentMap.gold):
+	if event is InputEventMouseButton and check_can_purchase(Globals.current_map.gold):
 		can_grab = event.pressed
 		grabbed_offset = position - get_global_mouse_position()
 
@@ -25,7 +25,7 @@ func _process(_delta):
 		check_can_drop()
 
 func _get_drag_data(_at_position):
-	if check_can_purchase(Globals.currentMap.gold):
+	if check_can_purchase(Globals.current_map.gold):
 		visible = false
 		create_placeholder()
 
@@ -40,7 +40,7 @@ func check_can_drop():
 	failed_drop()
 
 func build():
-	Globals.currentMap.gold -= Data.turrets[turretType]["cost"]
+	Globals.current_map.gold -= Data.turrets[turretType]["cost"]
 	placeholder.build()
 
 func failed_drop():
@@ -52,7 +52,7 @@ func create_placeholder():
 	var turretScene := load(Data.turrets[turretType]["scene"])
 	var turret = turretScene.instantiate()
 	turret.turret_type = turretType
-	Globals.turretsNode.add_child(turret)
+	Globals.turrets_node.add_child(turret)
 	placeholder = turret
 	placeholder.set_placeholder()
 

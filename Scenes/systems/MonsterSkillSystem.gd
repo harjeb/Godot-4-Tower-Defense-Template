@@ -287,7 +287,7 @@ func remove_effect(effect: Dictionary) -> void:
 			if effect.has("original_defense"):
 				effect.target.defense = effect.original_defense
 			effect.target.modulate = Color.WHITE
-			if effect.target.has("enemy_type"):
+			if effect.target.enemy_type != "":
 				var enemy_data = Data.enemies.get(effect.target.enemy_type) if Data.enemies.has(effect.target.enemy_type) else {}
 				if enemy_data.has("stats") and enemy_data.stats.has("speed"):
 					effect.target.speed = enemy_data.stats.get("speed") if enemy_data.stats.has("speed") else 1.0
@@ -325,9 +325,9 @@ func trigger_monster_skill(enemy: Node2D, skill: String) -> void:
 			trigger_acceleration(enemy)
 		"self_destruct":
 			# Only trigger if HP is below threshold
-			if enemy.has("hp"):
-				var max_hp = enemy.max_hp if enemy.has("max_hp") else enemy.hp
-				var current_hp = enemy.hp
+			if "hp" in enemy:
+				var max_hp = enemy.get("max_hp") if "max_hp" in enemy else enemy.get("hp")
+				var current_hp = enemy.get("hp")
 				if max_hp > 0 and current_hp / max_hp < 0.10:
 					trigger_self_destruct(enemy)
 		"petrification":

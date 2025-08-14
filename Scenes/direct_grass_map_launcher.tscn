@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8n8m3k5j1y8d"]
+
+[ext_resource type="Script" path="res://Scenes/direct_grass_map_launcher.gd" id="1_0p6wq"]
+
+[node name="DirectGrassMapLauncher" type="Node2D"]
+script = ExtResource("1_0p6wq")

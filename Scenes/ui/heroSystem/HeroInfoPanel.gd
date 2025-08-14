@@ -167,13 +167,13 @@ func setup_from_hero_manager(hero_manager: Node) -> void:
 		return
 	
 	# Connect to hero manager signals
-	if hero_manager.has_signal("hero_deployed"):
+	if hero_manager.has_signal("hero_deployed") and not hero_manager.is_connected("hero_deployed", _on_hero_deployed):
 		hero_manager.connect("hero_deployed", _on_hero_deployed)
 	
-	if hero_manager.has_signal("hero_died"):
+	if hero_manager.has_signal("hero_died") and not hero_manager.is_connected("hero_died", _on_hero_died):
 		hero_manager.connect("hero_died", _on_hero_died)
 	
-	if hero_manager.has_signal("hero_respawned"):
+	if hero_manager.has_signal("hero_respawned") and not hero_manager.is_connected("hero_respawned", _on_hero_respawned):
 		hero_manager.connect("hero_respawned", _on_hero_respawned)
 
 func _on_hero_deployed(hero: Node, position: Vector2) -> void:

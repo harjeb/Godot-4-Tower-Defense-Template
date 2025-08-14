@@ -131,12 +131,14 @@ func create_charge_projectile(tower: Node2D, target_pos: Vector2, damage_multipl
 	projectile.element = tower.element
 	projectile.source_tower = tower  # 设置发射塔的引用
 	# Apply projectile speed talent boost
-	var speed_multiplier = Globals.get("projectile_speed_boost") if Globals.has_method("get") and Globals.get("projectile_speed_boost") != null else 1.0
+	var speed_multiplier = 1.0
+	if Globals.has_method("get") and Globals.get("projectile_speed_boost") != null:
+		speed_multiplier = Globals.get("projectile_speed_boost")
 	projectile.speed = 300.0 * speed_multiplier
 	# 标记为充能技能投射物，禁用DA/TA触发
 	projectile.set_meta("is_charge_ability", true)
 	
-	Globals.projectilesNode.add_child(projectile)
+	Globals.projectiles_node.add_child(projectile)
 	projectile.position = tower.position
 	projectile.target = target_pos
 

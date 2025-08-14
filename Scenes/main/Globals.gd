@@ -142,3 +142,38 @@ func get_hero_system_status() -> Dictionary:
 		"deployed_heroes": get_deployed_heroes().size(),
 		"living_heroes": get_living_heroes().size()
 	}
+
+func show_error_dialog(message: String, title: String = "错误") -> void:
+	"""显示错误对话框，防止debug日志刷屏"""
+	if is_instance_valid(hud) and hud.has_node("ErrorDialogUI"):
+		var error_dialog = hud.get_node("ErrorDialogUI")
+		if error_dialog and error_dialog.has_method("show_error"):
+			error_dialog.show_error(message, title)
+	else:
+		# 如果HUD不可用，仍然使用print输出
+		print("错误: ", message)
+
+func _ready():
+	# 执行启动前检查
+	if ErrorHandler and ErrorHandler.has_method("perform_startup_checks"):
+		ErrorHandler.perform_startup_checks()
+	
+	# 设置全局错误处理
+	setup_global_error_handling()
+
+func setup_global_error_handling():
+	"""设置全局错误处理系统"""
+	# 设置自定义错误处理
+	set_meta("error_handler_enabled", true)
+	
+	# 启用错误监控
+	call_deferred("start_error_monitoring")
+	
+	# 设置全局编译时错误拦截
+	if ErrorHandler and ErrorHandler.has_method("setup_global_error_monitoring"):
+		ErrorHandler.setup_global_error_monitoring()
+
+func start_error_monitoring():
+	"""启动错误监控"""
+	print("错误监控系统已启动")
+	# 在这里可以添加其他错误监控逻辑

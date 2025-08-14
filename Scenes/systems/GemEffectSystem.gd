@@ -17,6 +17,7 @@ var effect_groups: Dictionary = {
 var frame_counter: int = 0
 var effect_pool: EffectPool
 var active_effects_by_target: Dictionary = {}
+var game_paused: bool = false
 
 # 敌人查找缓存系统
 var enemy_cache: Array = []
@@ -74,7 +75,7 @@ func _ready() -> void:
 		Globals.connect("game_paused", _on_game_paused)
 
 func _process(delta: float) -> void:
-	if Globals.get("game_paused", false):
+	if game_paused:
 		return
 	
 	frame_counter += 1
@@ -300,6 +301,7 @@ func find_effect_on_target(target: Node, effect_type: String) -> StatusEffect:
 
 func _on_game_paused(paused: bool) -> void:
 	# 游戏暂停时停止处理效果
+	game_paused = paused
 	set_process(not paused)
 
 # 详细的错误日志系统
@@ -626,7 +628,7 @@ func print_debug_info() -> void:
 		for suggestion in suggestions:
 			print("  [%s] %s" % [suggestion.priority.to_upper(), suggestion.message])
 	
-	print("=" * 40)
+	print("=".repeat(40))
 
 # 冰元素特效方法
 

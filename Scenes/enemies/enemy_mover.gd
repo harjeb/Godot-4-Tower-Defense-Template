@@ -111,6 +111,18 @@ func _ready():
 
 func _process(delta):
 	if state == State.walking:
+		# Handle freeze timer
+		if is_frozen and freeze_timer > 0:
+			freeze_timer -= delta
+			if freeze_timer <= 0:
+				set_frozen(false)
+		
+		# Handle petrify timer
+		if is_petrified and petrify_timer > 0:
+			petrify_timer -= delta
+			if petrify_timer <= 0:
+				set_petrified(false)
+		
 		# 物理模式处理
 		if movement_type == MovementType.GROUND and not using_physics_mode:
 			# 定期检查是否需要切换到物理模式
@@ -119,8 +131,8 @@ func _process(delta):
 				last_physics_check = 0.0
 				check_for_blocking_towers()
 		
-		# 普通移动（如果不在物理模式）
-		if not using_physics_mode:
+		# 普通移动（如果不在物理模式且未冻结）
+		if not using_physics_mode and not is_frozen:
 			# Move
 			progress_ratio += 0.0005 * speed
 			if progress_ratio == 1:
@@ -134,7 +146,7 @@ func _process(delta):
 		if can_heal:
 			heal_timer -= delta
 			if heal_timer <= 0 and hp < max_hp:
-				heal()
+				heal_with_effects(max_hp * 0.1)
 				heal_timer = heal_cooldown
 		
 		# Flip (只在非物理模式下处理)
@@ -143,13 +155,22 @@ func _process(delta):
 			if angle > 180:
 				angle -= 360
 			$Sprite2D.flip_v = abs(angle) > 90
+		
+		# Update light effects
+		update_light_effects(delta)
+		
+		# Update shadow effects
+		update_shadow_effects(delta)
+		
+		# Update wind effects
+		update_wind_effects(delta)
 
 func finished_path():
 	if is_destroyed:
 		return
 	is_destroyed = true
 	spawner.enemy_destroyed()
-	Globals.currentMap.get_base_damage(baseDamage)
+	Globals.current_map.get_base_damage(baseDamage)
 	queue_free()
 
 func get_damage(damage):
@@ -166,7 +187,7 @@ func get_damage(damage):
 func handle_death():
 	is_destroyed = true
 	spawner.enemy_destroyed()
-	Globals.currentMap.gold += goldYield
+	Globals.current_map.gold += goldYield
 	
 	# 掉落物品
 	var drop_item_id = LootSystem.roll_drop(Data.enemies[enemy_type])
@@ -202,12 +223,11 @@ func setup_special_abilities():
 			"heal":
 				can_heal = true
 
-func heal():
-	var heal_amount = max_hp * 0.1  # 恢复10%最大血量
-	hp = min(hp + heal_amount, max_hp)
+func heal_with_effects(amount: float) -> void:
+	heal(amount)
 	# 显示治疗效果
 	var heal_label = Label.new()
-	heal_label.text = "+%.0f" % heal_amount
+	heal_label.text = "+%.0f" % amount
 	heal_label.modulate = Color.GREEN
 	add_child(heal_label)
 	# 治疗动画
@@ -310,6 +330,7 @@ func can_be_blocked_by_tower(tower: Node) -> bool:
 		return false
 	
 	# Ground units can only be blocked by melee towers
+	return true
 
 ## Wind Element Effect System
 
@@ -384,7 +405,7 @@ func apply_knockback(force: float) -> void:
 	_add_knockback_visual_effect(knockback_direction)
 
 # Apply wind speed modifier
-func apply_speed_modifier(source: String, multiplier: float) -> void:
+func apply_wind_speed_modifier(source: String, multiplier: float) -> void:
 	if source == "flying_debuff":
 		wind_speed_modifier = multiplier
 		_update_effective_speed()
@@ -463,7 +484,7 @@ func update_wind_effects(delta: float) -> void:
 		if damage_timer >= 1.0:  # Apply damage every second
 			damage_timer = 0.0
 			var damage_per_second = get_meta("hurricane_damage_per_second") as float
-			take_damage(damage_per_second)
+			get_damage(damage_per_second)
 			
 			# Pull towards center
 			var center = get_meta("hurricane_center") as Vector2
@@ -525,10 +546,10 @@ func _on_hurricane_end() -> void:
 func _remove_hurricane_visual_effect() -> void:
 	modulate = Color.WHITE
 
-# Override process to include wind effects
-func _process(delta: float) -> void:
-	super._process(delta)
-	update_wind_effects(delta)
+func _remove_exile_visual_effect() -> void:
+	modulate = Color.WHITE
+	visible = true
+
 
 ## Physics System Methods
 
@@ -621,6 +642,9 @@ func _update_effective_speed() -> void:
 	for modifier in speed_modifiers.values():
 		total_multiplier *= modifier
 	
+	# Apply wind speed modifier
+	total_multiplier *= wind_speed_modifier
+	
 	speed = base_speed * total_multiplier
 
 # Set frost stacks
@@ -651,9 +675,6 @@ func set_frozen(frozen: bool, duration: float = 0.0) -> void:
 		_update_effective_speed()
 		# Remove visual freeze effect
 		_remove_freeze_visual_effect()
-
-# Defense modifier system
-var defense_modifiers: Dictionary = {}
 
 # Apply defense modifier
 func apply_defense_modifier(source: String, multiplier: float) -> void:
@@ -734,9 +755,6 @@ func set_armor_break_stacks(stacks: int) -> void:
 func get_movement_type() -> String:
 	return "ground" if movement_type == MovementType.GROUND else "flying"
 
-# Check if enemy is flying
-func is_flying() -> bool:
-	return movement_type == MovementType.FLYING
 
 # Add freeze visual effect
 func _add_freeze_visual_effect() -> void:
@@ -818,59 +836,6 @@ func get_is_petrified() -> bool:
 func get_max_health() -> float:
 	return max_hp
 
-# Process freeze timer
-func _process(delta):
-	if state == State.walking:
-		# Handle freeze timer
-		if is_frozen and freeze_timer > 0:
-			freeze_timer -= delta
-			if freeze_timer <= 0:
-				set_frozen(false)
-		
-		# Handle petrify timer
-		if is_petrified and petrify_timer > 0:
-			petrify_timer -= delta
-			if petrify_timer <= 0:
-				set_petrified(false)
-		
-		# 物理模式处理
-		if movement_type == MovementType.GROUND and not using_physics_mode:
-			# 定期检查是否需要切换到物理模式
-			last_physics_check += delta
-			if last_physics_check >= physics_check_interval:
-				last_physics_check = 0.0
-				check_for_blocking_towers()
-		
-		# 普通移动（如果不在物理模式且未冻结）
-		if not using_physics_mode and not is_frozen:
-			# Move
-			progress_ratio += 0.0005 * speed
-			if progress_ratio == 1:
-				finished_path()
-				return
-		
-		# Monster skill processing
-		process_monster_skills(delta)
-		
-		# 治疗逻辑
-		if can_heal:
-			heal_timer -= delta
-			if heal_timer <= 0 and hp < max_hp:
-				heal()
-				heal_timer = heal_cooldown
-		
-		# Flip (只在非物理模式下处理)
-		if not using_physics_mode:
-			var angle = int(rotation_degrees) % 360
-			if angle > 180:
-				angle -= 360
-			$Sprite2D.flip_v = abs(angle) > 90
-		
-		# Update light effects
-		update_light_effects(delta)
-		
-		# Update shadow effects
-		update_shadow_effects(delta)
 
 
 # Light Element Effect System
@@ -965,7 +930,7 @@ func update_light_effects(delta: float) -> void:
 	if is_judged:
 		judgment_timer -= delta
 		if judgment_timer <= 0:
-			set_judged(false)
+			set_judgment(false)
 
 # Shadow Effect Methods
 
@@ -1063,7 +1028,7 @@ func update_shadow_effects(delta: float) -> void:
 
 # Visual effects for shadow effects
 func _add_fear_visual_effect() -> void:
-	modulate = Color.DARK_PURPLE
+	modulate = Color(0.5, 0.0, 0.5)  # Dark purple
 	# Add particle effects or other visual indicators
 
 func _remove_fear_visual_effect() -> void:
@@ -1085,7 +1050,7 @@ func handle_fear_movement(source_position: Vector2, delta: float) -> void:
 
 # Apply damage with life steal calculation
 func take_damage_with_life_steal(damage: float, attacker: Node) -> void:
-	var actual_damage = take_damage(damage, "shadow")
+	var actual_damage = get_damage(damage)
 	
 	# Apply life steal to attacker if it has the effect
 	if attacker and attacker.has_method("apply_life_steal"):

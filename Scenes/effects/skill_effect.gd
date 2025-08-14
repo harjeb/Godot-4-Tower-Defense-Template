@@ -25,10 +25,10 @@ func setup_effect(type: String, duration_time: float):
 	# Basic visual setup based on effect type
 	match type:
 		"frost":
-			modulate = Color.CYAN
+			modulate = Color(0, 1, 1)
 		"acceleration":
-			modulate = Color.YELLOW
+			modulate = Color(1, 1, 0)
 		"explosion":
-			modulate = Color.ORANGE_RED
+			modulate = Color(1, 0.5, 0)
 		"petrification":
-			modulate = Color.GRAY
+			modulate = Color(0.5, 0.5, 0.5)

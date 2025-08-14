@@ -1,9 +1,17 @@
 extends Node2D
 class_name Turret
 
+# Import required classes
+const ChargeSystem = preload("res://Scenes/systems/ChargeSystem.gd")
+const WeaponWheelManager = preload("res://Scenes/systems/WeaponWheelManager.gd")
+const GemEffectSystem = preload("res://Scenes/systems/GemEffectSystem.gd")
+const TowerTechSystem = preload("res://Scenes/systems/TowerTechSystem.gd")
+
 signal turretUpdated
 signal gem_equipped(gem_data: Dictionary)
 signal gem_unequipped
+signal attack_hit(target: Node)
+signal projectile_bounce(target: Node)
 
 # 新增属性
 var element: String = "neutral"
@@ -154,19 +162,19 @@ func _setup_turret_data(value: String) -> void:
 		var texture = Data.load_resource_safe(turret_data["sprite"], "Texture2D")
 		if texture:
 			sprite_node.texture = texture
-			var scale_value = turret_data.get("scale", 1.0)
+			var scale_value = turret_data.get("scale") if turret_data.has("scale") else 1.0
 			sprite_node.scale = Vector2(scale_value, scale_value)
 	
-	rotates = turret_data.get("rotates", false)
-	element = turret_data.get("element", "neutral")
-	turret_category = turret_data.get("turret_category", "")
+	rotates = turret_data.get("rotates") if turret_data.has("rotates") else false
+	element = turret_data.get("element") if turret_data.has("element") else "neutral"
+	turret_category = turret_data.get("turret_category") if turret_data.has("turret_category") else ""
 	
 	# Setup combat type and target type
-	var combat_type_str = turret_data.get("combat_type", "ranged")
+	var combat_type_str = turret_data.get("combat_type") if turret_data.has("combat_type") else "ranged"
 	combat_type = CombatType.RANGED if combat_type_str == "ranged" else CombatType.MELEE
 	can_block_path = combat_type == CombatType.MELEE
 	
-	var target_type_str = turret_data.get("target_type", "both")
+	var target_type_str = turret_data.get("target_type") if turret_data.has("target_type") else "both"
 	match target_type_str:
 		"ground_only":
 			target_type = TargetType.GROUND_ONLY
@@ -326,6 +334,13 @@ func get_charge_system() -> ChargeSystem:
 	var charge_node = tree.current_scene.get_node_or_null("ChargeSystem")
 	if charge_node and charge_node is ChargeSystem:
 		return charge_node as ChargeSystem
+	
+	# 如果ChargeSystem不存在，显示错误提示（仅显示一次）
+	if not has_meta("charge_system_error_shown"):
+		set_meta("charge_system_error_shown", true)
+		if ErrorHandler and ErrorHandler.has_method("show_error"):
+			ErrorHandler.show_error("ChargeSystem 未找到，充能功能将不可用", "系统错误")
+	
 	return null
 
 ## Calculate number of attacks based on DA/TA probability
@@ -2135,6 +2150,12 @@ func _setup_healing_reduction_effect(effect_data: Dictionary):
 	if current_target:
 		apply_healing_reduction_to_target(current_target, reduction_percent)
 
+func _setup_death_contagion_effect(effect_data: Dictionary):
+	var contagion_radius = effect_data.get("contagion_radius", 80.0)
+	var contagion_stacks = effect_data.get("contagion_stacks", 1)
+	death_contagion_radius = contagion_radius
+	death_contagion_stacks = contagion_stacks
+
 func _setup_chance_fear_effect(effect_data: Dictionary):
 	var chance = effect_data.get("chance", 0.50)
 	var duration = effect_data.get("duration", 2.0)
@@ -2231,6 +2252,8 @@ func _setup_targeting_priority_effect(effect_data: Dictionary):
 var life_steal_percentage: float = 0.0
 var fear_chance: float = 0.50
 var fear_duration: float = 2.0
+var death_contagion_radius: float = 80.0
+var death_contagion_stacks: int = 1
 var fear_area_radius: float = 85.0
 var fear_area_duration: float = 2.0
 var no_healing_duration: float = 5.0

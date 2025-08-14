@@ -34,7 +34,9 @@ func fire_projectile(projectile_index: int, total_count: int):
 	projectile.setup_gem_effects(self)
 	
 	# Apply projectile speed talent boost
-	var speed_multiplier = Globals.get("projectile_speed_boost") if Globals.has_method("get") and Globals.get("projectile_speed_boost") != null else 1.0
+	var speed_multiplier = 1.0
+	if Globals.has_method("get") and Globals.get("projectile_speed_boost") != null:
+		speed_multiplier = Globals.get("projectile_speed_boost")
 	projectile.speed = bulletSpeed * speed_multiplier
 	projectile.pierce = bulletPierce
 	
@@ -43,7 +45,7 @@ func fire_projectile(projectile_index: int, total_count: int):
 	if total_count > 1:
 		spread_angle = (projectile_index - (total_count - 1) / 2.0) * 0.2  # 0.2 radians spread
 	
-	Globals.projectilesNode.add_child(projectile)
+	Globals.projectiles_node.add_child(projectile)
 	projectile.position = position
 	
 	# Apply spread to target direction

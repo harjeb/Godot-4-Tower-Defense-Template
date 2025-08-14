@@ -15,10 +15,10 @@ func _ready():
 func setup_visual_effect():
 	match effect_type:
 		"DA":
-			modulate = Color.YELLOW
+			modulate = Color(1, 1, 0)
 			scale = Vector2(1.2, 1.2)
 		"TA":
-			modulate = Color.RED
+			modulate = Color(1, 0, 0)
 			scale = Vector2(1.5, 1.5)
 	
 	# Animate the effect

@@ -103,11 +103,6 @@ func _create_manager(manager_name: String, manager_class, parent_node: Node) -> 
 	manager.name = manager_name
 	parent_node.add_child(manager)
 	
-	# 创建并添加召唤石系统
-	var summon_stone_system = SummonStoneSystem.new()
-	summon_stone_system.name = "SummonStoneSystem"
-	add_child(summon_stone_system)
-	
 	# 创建并添加科技点系统
 	var tech_point_system = TechPointSystem.new()
 	tech_point_system.name = "TechPointSystem"
@@ -209,20 +204,24 @@ func connect_hero_systems() -> void:
 	
 	if hero_manager and talent_system:
 		# 连接英雄管理器和天赋系统
-		hero_manager.connect("hero_deployed", _on_hero_deployed)
-		hero_manager.connect("hero_leveled_up", _on_hero_leveled_up)
+		if not hero_manager.is_connected("hero_deployed", _on_hero_deployed):
+			hero_manager.connect("hero_deployed", _on_hero_deployed)
+		if not hero_manager.is_connected("hero_leveled_up", _on_hero_leveled_up):
+			hero_manager.connect("hero_leveled_up", _on_hero_leveled_up)
 		
-		if talent_system.has_signal("talent_selected"):
+		if talent_system.has_signal("talent_selected") and not talent_system.is_connected("talent_selected", _on_talent_selected):
 			talent_system.connect("talent_selected", _on_talent_selected)
 	
 	if hero_manager and range_indicator:
 		# 连接英雄管理器到范围指示器
-		hero_manager.connect("hero_selection_started", _on_hero_selection_started)
-		range_indicator.connect("deployment_position_selected", _on_deployment_position_selected)
+		if not hero_manager.is_connected("hero_selection_started", _on_hero_selection_started):
+			hero_manager.connect("hero_selection_started", _on_hero_selection_started)
+		if not range_indicator.is_connected("deployment_position_selected", _on_deployment_position_selected):
+			range_indicator.connect("deployment_position_selected", _on_deployment_position_selected)
 	
 	if modifier_system:
 		# 连接词缀系统
-		if modifier_system.has_signal("modifiers_applied"):
+		if modifier_system.has_signal("modifiers_applied") and not modifier_system.is_connected("modifiers_applied", _on_level_modifiers_applied):
 			modifier_system.connect("modifiers_applied", _on_level_modifiers_applied)
 
 func _on_hero_deployed(hero: Node, position: Vector2) -> void:

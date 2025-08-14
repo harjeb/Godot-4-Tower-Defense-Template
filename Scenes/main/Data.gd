@@ -25,11 +25,11 @@ const PATHS = {
 			"laser": "res://Assets/bullets/bullet2.tres"
 		},
 		"summon_stones": {
-			"shiva": "res://Assets/summon_stones/shiva.png",
-			"lucifer": "res://Assets/summon_stones/lucifer.png",
-			"europa": "res://Assets/summon_stones/europa.png",
-			"titan": "res://Assets/summon_stones/titan.png",
-			"zeus": "res://Assets/summon_stones/zeus.png"
+			"shiva": "",
+			"lucifer": "",
+			"europa": "",
+			"titan": "",
+			"zeus": ""
 		},
 		"maps": {
 			"map1": "res://Assets/maps/map1.webp",
@@ -716,13 +716,13 @@ const enemies := {
 
 # 元素系统数据
 const elements := {
-	"fire": {"name": "火", "color": Color.RED},
-	"ice": {"name": "冰", "color": Color.CYAN}, 
-	"wind": {"name": "风", "color": Color.GREEN},
-	"earth": {"name": "土", "color": Color.SADDLE_BROWN},
-	"light": {"name": "光", "color": Color.WHITE},
-	"dark": {"name": "暗", "color": Color.BLACK},
-	"neutral": {"name": "无属性", "color": Color.GRAY}
+	"fire": {"name": "火", "color": Color(1, 0, 0)},
+	"ice": {"name": "冰", "color": Color(0, 1, 1)}, 
+	"wind": {"name": "风", "color": Color(0, 1, 0)},
+	"earth": {"name": "土", "color": Color(0.4, 0.2, 0)},
+	"light": {"name": "光", "color": Color(1, 1, 1)},
+	"dark": {"name": "暗", "color": Color(0, 0, 0)},
+	"neutral": {"name": "无属性", "color": Color(0.5, 0.5, 0.5)}
 }
 
 # 属性克制关系
@@ -3727,6 +3727,78 @@ var heroes := {
 		"charge_generation": 2.0,  # Charge per second
 		"max_charge": 100,
 		"description": "火系近战英雄，拥有强大的影拳技能和火焰防护能力"
+	},
+	"frost_archer": {
+		"name": "霜弓射手",
+		"element": "ice",
+		"base_stats": {
+			"max_hp": 420,
+			"damage": 45,
+			"defense": 8,
+			"attack_speed": 1.2,
+			"attack_range": 200.0,
+			"movement_speed": 0.0
+		},
+		"skills": ["ice_arrow", "frost_armor", "blizzard"],
+		"sprite": "res://Assets/heroes/frost_archer.png",
+		"scene": "res://Scenes/heroes/phantom_spirit.tscn",
+		"charge_generation": 1.8,
+		"max_charge": 100,
+		"description": "冰系远程英雄，擅长冰霜箭和范围攻击"
+	},
+	"thunder_mage": {
+		"name": "雷霆法师",
+		"element": "thunder",
+		"base_stats": {
+			"max_hp": 380,
+			"damage": 65,
+			"defense": 6,
+			"attack_speed": 0.8,
+			"attack_range": 180.0,
+			"movement_speed": 0.0
+		},
+		"skills": ["lightning_bolt", "thunder_storm", "chain_lightning"],
+		"sprite": "res://Assets/heroes/thunder_mage.png",
+		"scene": "res://Scenes/heroes/phantom_spirit.tscn",
+		"charge_generation": 2.2,
+		"max_charge": 100,
+		"description": "雷系法师，拥有强大的范围闪电技能"
+	},
+	"earth_guardian": {
+		"name": "大地守护者",
+		"element": "earth",
+		"base_stats": {
+			"max_hp": 680,
+			"damage": 35,
+			"defense": 18,
+			"attack_speed": 0.7,
+			"attack_range": 120.0,
+			"movement_speed": 0.0
+		},
+		"skills": ["rock_throw", "earth_shield", "earthquake"],
+		"sprite": "res://Assets/heroes/earth_guardian.png",
+		"scene": "res://Scenes/heroes/phantom_spirit.tscn",
+		"charge_generation": 1.5,
+		"max_charge": 100,
+		"description": "土系坦克英雄，拥有高防御和控场能力"
+	},
+	"shadow_assassin": {
+		"name": "暗影刺客",
+		"element": "shadow",
+		"base_stats": {
+			"max_hp": 360,
+			"damage": 75,
+			"defense": 5,
+			"attack_speed": 1.5,
+			"attack_range": 100.0,
+			"movement_speed": 0.0
+		},
+		"skills": ["shadow_strike", "stealth", "poison_blade"],
+		"sprite": "res://Assets/heroes/shadow_assassin.png",
+		"scene": "res://Scenes/heroes/phantom_spirit.tscn",
+		"charge_generation": 2.5,
+		"max_charge": 100,
+		"description": "暗系刺客英雄，拥有高爆发和隐身能力"
 	}
 }
 

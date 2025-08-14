@@ -24,10 +24,10 @@ func _ready():
 	find_tech_point_system()
 	
 	# Connect to global wave events if available
-	if Globals.has_signal("waveStarted"):
-		Globals.waveStarted.connect(_on_wave_started)
-	if Globals.has_signal("waveCleared"):
-		Globals.waveCleared.connect(_on_wave_cleared)
+	if Globals.has_signal("wave_started"):
+		Globals.wave_started.connect(_on_wave_started)
+	if Globals.has_signal("wave_cleared"):
+		Globals.wave_cleared.connect(_on_wave_cleared)
 
 func setup_countdown_timer():
 	countdown_timer = Timer.new()
@@ -46,7 +46,11 @@ func start_wave_countdown():
 	
 	# Apply wave preparation talent bonus
 	var base_time = default_countdown_time
-	var bonus_time = Globals.get("wave_preparation_bonus") if Globals.has_method("get") else 0.0
+	var bonus_time = 0.0
+	if Globals.has_method("get"):
+		var bonus = Globals.get("wave_preparation_bonus")
+		if bonus != null:
+			bonus_time = float(bonus)
 	current_countdown_time = base_time + bonus_time
 	
 	is_counting_down = true

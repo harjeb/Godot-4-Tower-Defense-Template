@@ -1,6 +1,9 @@
 class_name PerformanceMonitor
 extends Node
 
+# Import required classes
+const Turret = preload("res://Scenes/turrets/turretBase/turret_base.gd")
+
 ## Performance Monitor for Tower Defense Enhancement System
 ## Tracks FPS, entity counts, and system performance metrics
 
@@ -97,9 +100,11 @@ func count_active_monsters() -> int:
 ## Count active projectiles in the scene
 func count_active_projectiles() -> int:
 	var count = 0
-	var projectiles_node = get_tree().current_scene.get_node_or_null("Projectiles")
-	if projectiles_node:
-		count = projectiles_node.get_child_count()
+	var tree = get_tree()
+	if tree and tree.current_scene:
+		var projectiles_node = tree.current_scene.get_node_or_null("Projectiles")
+		if projectiles_node:
+			count = projectiles_node.get_child_count()
 	return count
 
 ## Check performance thresholds and trigger warnings
@@ -172,7 +177,10 @@ func reduce_update_frequencies():
 	update_frequency_reduced = true
 	
 	# Reduce PassiveSynergyManager update frequency
-	var synergy_manager = get_tree().current_scene.get_node_or_null("PassiveSynergyManager")
+	var tree = get_tree()
+	var synergy_manager = null
+	if tree and tree.current_scene:
+		synergy_manager = tree.current_scene.get_node_or_null("PassiveSynergyManager")
 	if synergy_manager and synergy_manager.has_method("set_update_interval"):
 		synergy_manager.set_update_interval(2.0)  # Update every 2 seconds instead of 1
 
@@ -186,19 +194,28 @@ func disable_particle_effects():
 
 ## Reduce monster skill effect frequency
 func reduce_monster_skill_frequency():
-	var monster_skill_system = get_tree().current_scene.get_node_or_null("MonsterSkillSystem")
+	var tree = get_tree()
+	var monster_skill_system = null
+	if tree and tree.current_scene:
+		monster_skill_system = tree.current_scene.get_node_or_null("MonsterSkillSystem")
 	if monster_skill_system and monster_skill_system.has_method("set_max_concurrent_effects"):
 		monster_skill_system.set_max_concurrent_effects(5)  # Reduce from 10 to 5
 
 ## Limit concurrent effects for performance
 func limit_concurrent_effects():
-	var monster_skill_system = get_tree().current_scene.get_node_or_null("MonsterSkillSystem")
+	var tree = get_tree()
+	var monster_skill_system = null
+	if tree and tree.current_scene:
+		monster_skill_system = tree.current_scene.get_node_or_null("MonsterSkillSystem")
 	if monster_skill_system:
 		monster_skill_system.max_concurrent_effects = min(monster_skill_system.max_concurrent_effects, 5)
 
 ## Limit projectiles by removing oldest ones
 func limit_projectiles():
-	var projectiles_node = get_tree().current_scene.get_node_or_null("Projectiles")
+	var tree = get_tree()
+	var projectiles_node = null
+	if tree and tree.current_scene:
+		projectiles_node = tree.current_scene.get_node_or_null("Projectiles")
 	if not projectiles_node:
 		return
 		
@@ -273,6 +290,9 @@ func restore_visual_effects():
 			particle.set_emitting(true)
 	
 	# Restore PassiveSynergyManager update frequency
-	var synergy_manager = get_tree().current_scene.get_node_or_null("PassiveSynergyManager")
+	var tree = get_tree()
+	var synergy_manager = null
+	if tree and tree.current_scene:
+		synergy_manager = tree.current_scene.get_node_or_null("PassiveSynergyManager")
 	if synergy_manager and synergy_manager.has_method("set_update_interval"):
 		synergy_manager.set_update_interval(1.0)  # Back to 1 second updates

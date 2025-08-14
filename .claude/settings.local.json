@@ -28,7 +28,17 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "Bash(python:*)",
-      "Bash(dir)"
+      "Bash(dir)",
+      "Bash(timeout 30 godot:*)",
+      "Bash(timeout 15 godot:*)",
+      "Bash(timeout 10 godot:*)",
+      "Bash(timeout 5 godot:*)",
+      "Bash(timeout:*)",
+      "Bash(\"D:/Program Files/Godot_v4.4-stable_win64_console.exe\" --headless --path \"D:/pycode/Godot-4-Tower-Defense-Template\" \"D:/pycode/Godot-4-Tower-Defense-Template/project.godot\")",
+      "Bash(where:*)",
+      "Bash(\"D:/����/GODOT/godot.exe\":*)",
+      "Bash(\"/d/工具/GODOT/godot.exe\":*)",
+      "Bash(\"D:/工具/GODOT/godot.exe\":*)"
     ],
     "deny": []
   }
