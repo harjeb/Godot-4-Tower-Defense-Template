@@ -11,7 +11,7 @@ signal enemy_destroyed
 var main_enemy_mover: Node
 var is_physics_active: bool = false
 var target_position: Vector2
-var movement_speed: float = 100.0
+var movement_speed: float = 1.0
 
 # Physics movement variables
 var push_force: float = 50.0

@@ -74,6 +74,7 @@ var attack_speed := 1.0:
 		var cooldown_node = get_node_or_null("AttackCooldown")
 		if cooldown_node:
 			cooldown_node.wait_time = 1.0/value
+var level: int = 1  # 塔的等级
 var attack_range := 1.0:
 	set(value):
 		attack_range = value
@@ -317,6 +318,9 @@ func upgrade_turret() -> void:
 
 func attack() -> void:
 	if is_instance_valid(current_target):
+		# 发射子弹到目标
+		shoot_bullet()
+		
 		# For non-projectile towers, directly call charge system when attacking
 		if turret_category != "projectile":
 			var charge_system_node = get_charge_system()
@@ -325,6 +329,36 @@ func attack() -> void:
 					charge_system_node.add_charge_on_hit(self)
 	else:
 		try_get_closest_target()
+
+# 发射子弹到目标
+func shoot_bullet():
+	if not current_target or not is_instance_valid(current_target):
+		return
+	
+	# 创建子弹
+	var bullet_scene = preload("res://Scenes/turrets/projectileTurret/bullet/bulletBase.tscn")
+	var bullet = bullet_scene.instantiate()
+	
+	# 设置子弹属性
+	bullet.position = global_position
+	bullet.target = current_target.global_position
+	bullet.base_damage = damage
+	bullet.damage = damage
+	bullet.speed = 400.0
+	bullet.element = element
+	bullet.turret_category = turret_category
+	bullet.equipped_gem = equipped_gem
+	bullet.source_tower = self
+	
+	# 设置子弹类型（使用基础火焰子弹）
+	bullet.bullet_type = "fire"
+	
+	# 设置宝石效果
+	if bullet.has_method("setup_gem_effects"):
+		bullet.setup_gem_effects(self)
+	
+	# 添加到场景
+	get_tree().current_scene.add_child(bullet)
 
 func get_charge_system() -> ChargeSystem:
 	var tree = get_tree()
@@ -537,10 +571,18 @@ var charge_system: ChargeSystem
 var tower_tech_system: TowerTechSystem
 var tech_specialization: String = "1"
 
+# Hover Tooltip System
+var hover_tooltip: Panel
+var tooltip_label: RichTextLabel
+var hover_area: Area2D
+var is_hovered: bool = false
+
 func _ready():
 	# Existing _ready code...
 	find_charge_system()
 	find_tower_tech_system()
+	setup_hover_tooltip()
+	setup_collision_area()
 
 func find_charge_system():
 	var tree = get_tree()
@@ -587,10 +629,166 @@ func _apply_gem_skills():
 		return
 	
 	# 应用技能效果
-	for effect_name in gem_skills.effects:
-		var effect_data = Data.effects.get(effect_name) if Data.effects.has(effect_name) else {}
-		if not effect_data.is_empty():
-			_apply_tower_effect(effect_data)
+
+# Hover Tooltip System Methods
+func setup_hover_tooltip():
+	# 创建悬停检测区域
+	hover_area = Area2D.new()
+	var collision = CollisionShape2D.new()
+	var shape = CircleShape2D.new()
+	shape.radius = 32  # 塔的检测范围
+	collision.shape = shape
+	hover_area.add_child(collision)
+	add_child(hover_area)
+	
+	# 连接鼠标事件
+	hover_area.mouse_entered.connect(_on_mouse_entered)
+	hover_area.mouse_exited.connect(_on_mouse_exited)
+	
+	# 创建提示面板
+	create_tooltip_panel()
+
+func create_tooltip_panel():
+	hover_tooltip = Panel.new()
+	hover_tooltip.size = Vector2(280, 200)
+	hover_tooltip.visible = false
+	hover_tooltip.z_index = 100
+	
+	# 设置面板样式
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.1, 0.9)
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.border_color = Color.GOLD
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	hover_tooltip.add_theme_stylebox_override("panel", style)
+	
+	# 创建文本标签
+	tooltip_label = RichTextLabel.new()
+	tooltip_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tooltip_label.add_theme_constant_override("margin_left", 10)
+	tooltip_label.add_theme_constant_override("margin_right", 10)
+	tooltip_label.add_theme_constant_override("margin_top", 10)
+	tooltip_label.add_theme_constant_override("margin_bottom", 10)
+	tooltip_label.bbcode_enabled = true
+	tooltip_label.fit_content = true
+	hover_tooltip.add_child(tooltip_label)
+	
+	# 添加到场景根节点以确保显示在最上层
+	var scene = get_tree().current_scene
+	if scene:
+		scene.add_child(hover_tooltip)
+	else:
+		# 如果当前场景不可用，添加到viewport
+		get_viewport().add_child(hover_tooltip)
+
+func _on_mouse_entered():
+	is_hovered = true
+	show_tooltip()
+
+func _on_mouse_exited():
+	is_hovered = false
+	hide_tooltip()
+
+func show_tooltip():
+	if not hover_tooltip:
+		return
+	
+	# 更新提示内容
+	update_tooltip_content()
+	
+	# 设置位置（鼠标右侧）
+	var mouse_pos = get_global_mouse_position()
+	hover_tooltip.position = mouse_pos + Vector2(20, -hover_tooltip.size.y / 2)
+	
+	# 确保不超出屏幕边界
+	var screen_size = get_viewport().get_visible_rect().size
+	if hover_tooltip.position.x + hover_tooltip.size.x > screen_size.x:
+		hover_tooltip.position.x = mouse_pos.x - hover_tooltip.size.x - 20
+	if hover_tooltip.position.y < 0:
+		hover_tooltip.position.y = 0
+	elif hover_tooltip.position.y + hover_tooltip.size.y > screen_size.y:
+		hover_tooltip.position.y = screen_size.y - hover_tooltip.size.y
+	
+	hover_tooltip.visible = true
+
+func hide_tooltip():
+	if hover_tooltip:
+		hover_tooltip.visible = false
+
+func update_tooltip_content():
+	if not tooltip_label:
+		return
+	
+	var turret_name = name if deployed else Data.turrets[turret_type]["name"]
+	var content = "[center][color=gold][b]%s[/b][/color][/center]\n" % turret_name
+	
+	if not deployed:
+		content += "[color=yellow][i]建造预览[/i][/color]\n"
+		content += "[color=white]建造费用: %d金币[/color]\n\n" % Data.turrets[turret_type]["cost"]
+	else:
+		content += "[color=white]等级: %d[/color]\n" % level
+	
+	content += "[color=lightblue]类型: %s[/color]\n\n" % turret_type
+	
+	# 基础属性
+	content += "[color=yellow][b]属性:[/b][/color]\n"
+	content += "[color=white]• 伤害: %.1f[/color]\n" % damage
+	content += "[color=white]• 攻击速度: %.2f[/color]\n" % attack_speed
+	content += "[color=white]• 攻击范围: %.0f[/color]\n" % attack_range
+	
+	# 元素信息
+	if element != "neutral":
+		content += "[color=cyan]• 元素: %s[/color]\n" % element
+	
+	# 特殊能力 (建造后才显示)
+	if deployed and not equipped_gem.is_empty():
+		content += "\n[color=purple][b]装备宝石:[/b][/color]\n"
+		var gem_name = equipped_gem.get("name", "未知宝石")
+		content += "[color=purple]• %s[/color]\n" % gem_name
+	
+	# 充能信息 (建造后才显示)
+	if deployed and has_charge_ability():
+		var charge_progress = get_charge_progress()
+		content += "\n[color=orange][b]充能: %.0f%%[/b][/color]\n" % (charge_progress * 100)
+	
+	# 近战塔特殊信息
+	if combat_type == CombatType.MELEE:
+		content += "\n[color=red][b]阻挡塔[/b][/color]\n"
+		if deployed:
+			content += "[color=white]生命值: %.0f/%.0f[/color]\n" % [current_health, max_health]
+		else:
+			content += "[color=white]最大生命值: %.0f[/color]\n" % max_health
+			content += "[color=gray]可以阻挡地面单位[/color]\n"
+	
+	# 预览状态下显示更多信息
+	if not deployed:
+		content += "\n[color=cyan][b]升级信息:[/b][/color]\n"
+		content += "[color=white]升级费用: %d金币[/color]\n" % Data.turrets[turret_type]["upgrade_cost"]
+		content += "[color=white]最高等级: %d[/color]\n" % Data.turrets[turret_type]["max_level"]
+		
+		# 显示升级属性
+		var upgrades = Data.turrets[turret_type]["upgrades"]
+		if not upgrades.is_empty():
+			content += "\n[color=green][b]升级效果:[/b][/color]\n"
+			for upgrade_stat in upgrades:
+				var upgrade_data = upgrades[upgrade_stat]
+				var amount = upgrade_data["amount"]
+				var multiplies = upgrade_data.get("multiplies", false)
+				var effect_text = "+" + str(amount) if not multiplies else "x" + str(amount)
+				content += "[color=green]• %s: %s[/color]\n" % [upgrade_stat, effect_text]
+	
+	tooltip_label.text = content
+
+func _exit_tree():
+	# 清理tooltip
+	if hover_tooltip and is_instance_valid(hover_tooltip):
+		hover_tooltip.queue_free()
 
 func _remove_gem_skills():
 	# 移除所有宝石技能效果
@@ -2132,6 +2330,22 @@ func _on_respawn_timer_timeout() -> void:
 		setup_blocking_collision()
 	
 	print("Blocking tower respawned!")
+
+# Setup collision area for consistent placement range
+func setup_collision_area():
+	var collision_area = get_node_or_null("CollisionArea")
+	if not collision_area:
+		return
+	
+	var collision_shape = collision_area.get_node_or_null("CollisionShape2D")
+	if not collision_shape:
+		return
+	
+	# 设置统一的建造碰撞区域大小（不受sprite scale影响）
+	if collision_shape.shape is CircleShape2D:
+		collision_shape.shape.radius = 32  # 统一半径32像素
+	elif collision_shape.shape is RectangleShape2D:
+		collision_shape.shape.size = Vector2(64, 64)  # 统一64x64像素
 
 
 # Shadow Effect Setup Methods

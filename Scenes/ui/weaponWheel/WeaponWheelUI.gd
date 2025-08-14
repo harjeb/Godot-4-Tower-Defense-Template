@@ -39,6 +39,9 @@ func setup_ui():
 	title_label.size = Vector2(200, 30)
 	panel.add_child(title_label)
 	
+	# 添加拖拽功能
+	setup_panel_dragging(panel)
+	
 	# 创建关闭按钮
 	close_button = Button.new()
 	close_button.text = "X"
@@ -199,3 +202,22 @@ class WeaponWheelSlot:
 	
 	func _on_remove_pressed():
 		buff_removed.emit(slot_index)
+		clear_buff()
+
+# 拖拽功能设置
+var dragging = false
+var drag_start_position = Vector2.ZERO
+
+func setup_panel_dragging(panel_node: Panel):
+	panel_node.gui_input.connect(_on_panel_input)
+
+func _on_panel_input(event: InputEvent):
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				dragging = true
+				drag_start_position = event.global_position - position
+			else:
+				dragging = false
+	elif event is InputEventMouseMotion and dragging:
+		position = event.global_position - drag_start_position

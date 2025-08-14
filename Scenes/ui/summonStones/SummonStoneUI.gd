@@ -15,17 +15,17 @@ func _ready():
 	connect_signals()
 
 func setup_ui():
-	# Create 3 horizontal slots for WOW-style layout
-	var hbox = HBoxContainer.new()
-	hbox.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	hbox.position = Vector2(50, -100)
-	add_child(hbox)
+	# Create 3 vertical slots 
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	vbox.position = Vector2(10, -220)  # 调整位置以容纳3个垂直槽位
+	add_child(vbox)
 	
 	for i in range(3):
 		var slot_panel = Panel.new()
 		slot_panel.custom_minimum_size = Vector2(64, 64)
 		slot_panel.add_theme_stylebox_override("panel", create_slot_style())
-		hbox.add_child(slot_panel)
+		vbox.add_child(slot_panel)
 		slot_containers.append(slot_panel)
 		
 		# Add icon texture rect

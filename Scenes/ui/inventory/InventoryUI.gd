@@ -29,15 +29,20 @@ func setup_ui():
 	# 创建主面板
 	var panel = Panel.new()
 	panel.size = Vector2(400, 500)
-	panel.position = Vector2(50, 50)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	panel.position = Vector2(100, 100)
 	add_child(panel)
 	
-	# 创建标题
+	# 创建标题（作为拖拽区域）
 	title_label = Label.new()
 	title_label.text = "背包"
 	title_label.position = Vector2(10, 10)
 	title_label.size = Vector2(200, 30)
+	title_label.add_theme_color_override("font_color", Color.WHITE)
 	panel.add_child(title_label)
+	
+	# 添加拖拽功能到整个面板
+	setup_panel_dragging(panel)
 	
 	# 创建关闭按钮
 	close_button = Button.new()
@@ -111,6 +116,24 @@ func get_inventory_manager() -> Node:
 		return tree.root.get_node_or_null("InventoryManager")
 	return null
 
+# 拖拽功能设置
+var dragging = false
+var drag_start_position = Vector2.ZERO
+
+func setup_panel_dragging(panel_node: Panel):
+	panel_node.gui_input.connect(_on_panel_input)
+
+func _on_panel_input(event: InputEvent):
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				dragging = true
+				drag_start_position = event.global_position - position
+			else:
+				dragging = false
+	elif event is InputEventMouseMotion and dragging:
+		position = event.global_position - drag_start_position
+
 # 内部槽位类
 class InventorySlot:
 	extends Control
@@ -126,11 +149,29 @@ class InventorySlot:
 	func _init():
 		custom_minimum_size = Vector2(64, 64)
 		
-		# 创建背景
+		# 创建背景框
 		background = NinePatchRect.new()
 		background.size = Vector2(64, 64)
-		background.modulate = Color(0.3, 0.3, 0.3, 0.8)
-		add_child(background)
+		background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		
+		# 创建背景样式
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.2, 0.2, 0.2, 0.8)
+		style.border_width_left = 1
+		style.border_width_right = 1
+		style.border_width_top = 1
+		style.border_width_bottom = 1
+		style.border_color = Color(0.6, 0.6, 0.6, 0.8)
+		style.corner_radius_top_left = 4
+		style.corner_radius_top_right = 4
+		style.corner_radius_bottom_left = 4
+		style.corner_radius_bottom_right = 4
+		
+		# 应用样式到Panel而不是NinePatchRect
+		var panel = Panel.new()
+		panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		panel.add_theme_stylebox_override("panel", style)
+		add_child(panel)
 		
 		# 创建物品图标
 		item_icon = TextureRect.new()

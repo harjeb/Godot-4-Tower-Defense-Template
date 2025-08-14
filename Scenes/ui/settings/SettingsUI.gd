@@ -34,15 +34,36 @@ func setup_ui():
 	# 创建主面板
 	panel = Panel.new()
 	panel.size = Vector2(600, 500)
-	panel.position = Vector2(100, 100)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	panel.position = Vector2(100, 10)
 	add_child(panel)
 	
-	# 创建标题
+	# 创建标题（作为拖拽区域）
 	title_label = Label.new()
 	title_label.text = "游戏设置"
 	title_label.position = Vector2(10, 10)
 	title_label.size = Vector2(200, 30)
+	title_label.add_theme_color_override("font_color", Color.WHITE)
 	panel.add_child(title_label)
+	
+	# 添加拖拽功能
+	var is_dragging = false
+	var drag_offset = Vector2.ZERO
+	
+	panel.gui_input.connect(func(event):
+		if event is InputEventMouseButton:
+			if event.button_index == MOUSE_BUTTON_LEFT:
+				if event.pressed:
+					# 开始拖拽
+					is_dragging = true
+					drag_offset = event.position
+				else:
+					# 停止拖拽
+					is_dragging = false
+		elif event is InputEventMouseMotion and is_dragging:
+			# 拖拽移动
+			panel.position += event.position - drag_offset
+	)
 	
 	# 创建关闭按钮
 	close_button = Button.new()

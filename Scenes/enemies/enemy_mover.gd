@@ -105,6 +105,9 @@ func _ready():
 	# 初始化治疗计时器
 	heal_timer = heal_cooldown
 	
+	# 创建HP条
+	create_health_bar()
+	
 	# 为地面单位设置物理系统
 	if movement_type == MovementType.GROUND:
 		setup_physics_system()
@@ -134,7 +137,7 @@ func _process(delta):
 		# 普通移动（如果不在物理模式且未冻结）
 		if not using_physics_mode and not is_frozen:
 			# Move
-			progress_ratio += 0.0005 * speed
+			progress_ratio += 0.0001 * speed
 			if progress_ratio == 1:
 				finished_path()
 				return
@@ -178,9 +181,15 @@ func get_damage(damage):
 		return
 	
 	# Apply defense system damage reduction
-	var final_damage = DefenseSystem.calculate_damage_after_defense(damage, defense)
+	var final_damage = damage
+	if defense > 0:
+		final_damage = damage / (1 + defense/100.0)
 	hp -= final_damage
 	damage_animation()
+	
+	# 更新HP条
+	update_health_bar()
+	
 	if hp <= 0:
 		handle_death()
 
@@ -852,6 +861,12 @@ var holy_damage_on_death: bool = false
 
 var active_buffs: Array = []  # Track active buffs for purify effect
 
+# HP条相关变量
+var health_bar_container: Control
+var health_bar_bg: ColorRect
+var health_bar_fg: ColorRect
+var health_label: Label
+
 # Set blind status
 func set_blinded(blinded: bool, miss_chance: float = 0.50, duration: float = 0.0) -> void:
 	is_blinded = blinded
@@ -1068,3 +1083,52 @@ func heal(amount: float) -> void:
 		effective_amount = amount * (1.0 - healing_reduction)
 	
 	hp = min(hp + effective_amount, max_hp)
+	
+	# 更新HP条
+	update_health_bar()
+
+# 创建HP条
+func create_health_bar():
+	# 创建容器
+	health_bar_container = Control.new()
+	health_bar_container.size = Vector2(40, 8)
+	health_bar_container.position = Vector2(-20, -45)  # 在敌人头上方
+	add_child(health_bar_container)
+	
+	# 创建背景条
+	health_bar_bg = ColorRect.new()
+	health_bar_bg.size = Vector2(40, 6)
+	health_bar_bg.position = Vector2(0, 1)
+	health_bar_bg.color = Color.BLACK
+	health_bar_container.add_child(health_bar_bg)
+	
+	# 创建前景HP条
+	health_bar_fg = ColorRect.new()
+	health_bar_fg.size = Vector2(40, 6)
+	health_bar_fg.position = Vector2(0, 1)
+	health_bar_fg.color = Color(0.0, 0.6, 0.0)  # 更深的绿色
+	health_bar_container.add_child(health_bar_fg)
+	
+	# 创建HP数值标签（隐藏）
+	health_label = Label.new()
+	health_label.visible = false  # 隐藏数字显示
+	health_bar_container.add_child(health_label)
+	
+	# 初始更新
+	update_health_bar()
+
+# 更新HP条显示
+func update_health_bar():
+	if not health_bar_fg or not health_label:
+		return
+	
+	var health_ratio = hp / max_hp
+	health_bar_fg.size.x = 40 * health_ratio
+	
+	# 根据生命值百分比改变颜色
+	if health_ratio > 0.6:
+		health_bar_fg.color = Color(0.0, 0.6, 0.0)  # 深绿色
+	elif health_ratio > 0.3:
+		health_bar_fg.color = Color.YELLOW
+	else:
+		health_bar_fg.color = Color.RED

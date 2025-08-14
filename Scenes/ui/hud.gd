@@ -85,7 +85,7 @@ var tech_points_display: Label
 func setup_new_ui_systems():
 	# 创建 UI 按钮容器
 	ui_buttons_container = HBoxContainer.new()
-	ui_buttons_container.position = Vector2(10, 100)
+	ui_buttons_container.position = Vector2(10, 10)
 	ui_buttons_container.size = Vector2(500, 40)  # 增加宽度以容纳新按钮
 	add_child(ui_buttons_container)
 	
@@ -137,6 +137,7 @@ func setup_new_ui_systems():
 func create_ui_panels():
 	# 创建背包 UI
 	inventory_ui = preload("res://Scenes/ui/inventory/InventoryUI.gd").new()
+	inventory_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	inventory_ui.hide()
 	inventory_ui.inventory_closed.connect(_on_inventory_closed)
 	inventory_ui.gem_selected.connect(_on_gem_selected)
@@ -172,6 +173,7 @@ func create_ui_panels():
 	
 	# 创建游戏设置 UI
 	settings_ui = preload("res://Scenes/ui/settings/SettingsUI.gd").new()
+	settings_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	settings_ui.hide()
 	settings_ui.settings_closed.connect(_on_settings_closed)
 	add_child(settings_ui)
@@ -180,7 +182,7 @@ func create_ui_panels():
 	summon_stone_ui = preload("res://Scenes/ui/summonStones/SummonStoneUI.gd").new()
 	summon_stone_ui.name = "SummonStoneUI"
 	summon_stone_ui.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	summon_stone_ui.position = Vector2(50, -120)  # 放置在屏幕底部左侧
+	summon_stone_ui.position = Vector2(10, -240)  # 放置在屏幕底部左侧，调整位置以容纳垂直布局
 	add_child(summon_stone_ui)
 	
 	# 创建错误对话框 UI
