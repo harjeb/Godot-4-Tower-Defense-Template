@@ -111,7 +111,7 @@ func get_all_deployed_towers() -> Array:
 		# Fallback: search using groups
 		var turret_nodes = get_tree().get_nodes_in_group("turret")
 		for turret in turret_nodes:
-			if turret is Turret and turret.deployed:
+			if turret.get_script() and turret.get_script().get_global_name() == "Turret" and turret.get("deployed"):
 				towers.append(turret)
 	
 	return towers

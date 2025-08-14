@@ -3,7 +3,7 @@ extends Control
 
 signal talent_tree_closed()
 
-var tech_point_system: TechPointSystem
+var tech_point_system: Node
 var talent_buttons: Dictionary = {}
 var tech_points_label: Label
 var main_container: ScrollContainer

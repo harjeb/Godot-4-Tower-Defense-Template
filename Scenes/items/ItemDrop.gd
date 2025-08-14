@@ -122,10 +122,10 @@ func play_pickup_effect():
 	
 	LootSystem.create_pickup_effect(global_position, effect_color)
 
-func get_inventory_manager() -> InventoryManager:
+func get_inventory_manager() -> Node:
 	var tree = get_tree()
 	if tree and tree.root:
-		return tree.root.get_node_or_null("InventoryManager") as InventoryManager
+		return tree.root.get_node_or_null("InventoryManager")
 	return null
 
 func get_item_info() -> Dictionary:
@@ -138,8 +138,9 @@ func set_item_data(new_item_id: String):
 	setup_visual()
 
 # 可以通过代码创建ItemDrop实例
-static func create_item_drop(item_id: String, position: Vector2) -> ItemDrop:
-	var item_drop = ItemDrop.new()
+static func create_item_drop(item_id: String, position: Vector2) -> Node2D:
+	var item_drop_script = preload("res://Scenes/items/ItemDrop.gd")
+	var item_drop = item_drop_script.new()
 	item_drop.item_id = item_id
 	item_drop.position = position
 	

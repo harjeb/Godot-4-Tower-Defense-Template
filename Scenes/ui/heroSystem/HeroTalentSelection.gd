@@ -4,7 +4,7 @@ extends Control
 ## Hero Talent Selection UI
 ## Manages the talent selection interface for heroes
 
-signal talent_selected(hero: HeroBase, talent_id: String)
+signal talent_selected(hero: Node, talent_id: String)
 signal selection_cancelled()
 
 # UI components
@@ -15,7 +15,7 @@ signal selection_cancelled()
 @onready var instruction_label: Label = $Panel/InstructionLabel
 
 # State
-var current_hero: HeroBase = null
+var current_hero: Node = null
 var available_talents: Array[Dictionary] = []
 var talent_buttons: Array[Button] = []
 var is_visible: bool = false
@@ -38,7 +38,7 @@ func setup_talent_buttons() -> void:
 			button.pressed.connect(_on_talent_option_pressed.bind(i - 1))
 			button.visible = false  # Initially hidden
 
-func show_talent_selection(hero: HeroBase, talents: Array[Dictionary]) -> void:
+func show_talent_selection(hero: Node, talents: Array[Dictionary]) -> void:
 	"""Show talent selection for hero"""
 	if not hero or not is_instance_valid(hero):
 		return
@@ -184,24 +184,24 @@ func _input(event: InputEvent) -> void:
 			selection_cancelled.emit()
 			hide_selection()
 
-func get_talent_system() -> HeroTalentSystem:
+func get_talent_system() -> Node:
 	"""Get reference to talent system"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	return tree.current_scene.get_node_or_null("HeroTalentSystem") as HeroTalentSystem
+	return tree.current_scene.get_node_or_null("HeroTalentSystem")
 
 func is_selection_active() -> bool:
 	"""Check if selection is currently active"""
 	return is_visible
 
-func get_current_hero() -> HeroBase:
+func get_current_hero() -> Node:
 	"""Get current hero being offered talents"""
 	return current_hero if is_instance_valid(current_hero) else null
 
 # External interface for HeroManager
-func setup_from_hero_manager(hero_manager: HeroManager) -> void:
+func setup_from_hero_manager(hero_manager: Node) -> void:
 	"""Setup selection from hero manager"""
 	if not hero_manager:
 		return
@@ -210,7 +210,7 @@ func setup_from_hero_manager(hero_manager: HeroManager) -> void:
 	if hero_manager.has_signal("talent_selection_requested"):
 		hero_manager.connect("talent_selection_requested", _on_talent_selection_requested)
 
-func _on_talent_selection_requested(hero: HeroBase, talents: Array[Dictionary]) -> void:
+func _on_talent_selection_requested(hero: Node, talents: Array[Dictionary]) -> void:
 	"""Handle talent selection request"""
 	show_talent_selection(hero, talents)
 
@@ -223,10 +223,10 @@ func _exit_tree() -> void:
 			if hero_manager.is_connected("talent_selection_requested", _on_talent_selection_requested):
 				hero_manager.disconnect("talent_selection_requested", _on_talent_selection_requested)
 
-func get_hero_manager() -> HeroManager:
+func get_hero_manager() -> Node:
 	"""Get reference to hero manager"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	return tree.current_scene.get_node_or_null("HeroManager") as HeroManager
+	return tree.current_scene.get_node_or_null("HeroManager")

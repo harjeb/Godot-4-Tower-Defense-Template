@@ -17,7 +17,7 @@ var is_wave_active: bool = false
 var current_wave: int = 0
 var countdown_timer: Timer
 
-var tech_point_system: TechPointSystem
+var tech_point_system: Node
 
 func _ready():
 	setup_countdown_timer()

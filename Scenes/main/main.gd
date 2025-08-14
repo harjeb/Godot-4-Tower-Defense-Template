@@ -185,10 +185,10 @@ func run_system_tests():
 
 func connect_hero_systems() -> void:
 	"""连接英雄系统之间的信号"""
-	var hero_manager = get_node_or_null("HeroManager") as HeroManager
-	var talent_system = get_node_or_null("HeroTalentSystem") as HeroTalentSystem
-	var modifier_system = get_node_or_null("LevelModifierSystem") as LevelModifierSystem
-	var range_indicator = get_node_or_null("HeroRangeIndicator") as HeroRangeIndicator
+	var hero_manager = get_node_or_null("HeroManager")
+	var talent_system = get_node_or_null("HeroTalentSystem")
+	var modifier_system = get_node_or_null("LevelModifierSystem")
+	var range_indicator = get_node_or_null("HeroRangeIndicator")
 	
 	# 连接UI组件
 	var hero_selection_ui = get_node_or_null("UI/HeroSelection")
@@ -225,12 +225,12 @@ func connect_hero_systems() -> void:
 		if modifier_system.has_signal("modifiers_applied"):
 			modifier_system.connect("modifiers_applied", _on_level_modifiers_applied)
 
-func _on_hero_deployed(hero: HeroBase, position: Vector2) -> void:
+func _on_hero_deployed(hero: Node, position: Vector2) -> void:
 	"""处理英雄部署"""
 	print("Hero deployed: ", hero.hero_name, " at ", position)
 	
 	# 连接英雄到天赋系统
-	var talent_system = get_node_or_null("HeroTalentSystem") as HeroTalentSystem
+	var talent_system = get_node_or_null("HeroTalentSystem")
 	if talent_system:
 		talent_system.connect_to_hero(hero)
 	
@@ -239,11 +239,11 @@ func _on_hero_deployed(hero: HeroBase, position: Vector2) -> void:
 	if hero_info_panel:
 		hero_info_panel.update_hero_info(hero)
 
-func _on_hero_leveled_up(hero: HeroBase, new_level: int) -> void:
+func _on_hero_leveled_up(hero: Node, new_level: int) -> void:
 	"""处理英雄升级"""
 	print("Hero leveled up: ", hero.hero_name, " to level ", new_level)
 
-func _on_talent_selected(hero: HeroBase, talent_id: String, level: int) -> void:
+func _on_talent_selected(hero: Node, talent_id: String, level: int) -> void:
 	"""处理天赋选择"""
 	print("Talent selected: ", talent_id, " for ", hero.hero_name, " at level ", level)
 
@@ -253,13 +253,13 @@ func _on_level_modifiers_applied(modifiers: Array[Dictionary]) -> void:
 
 func _on_hero_selection_started(hero_type: String) -> void:
 	"""处理英雄选择开始"""
-	var range_indicator = get_node_or_null("HeroRangeIndicator") as HeroRangeIndicator
+	var range_indicator = get_node_or_null("HeroRangeIndicator")
 	if range_indicator:
 		range_indicator.show_deployment_zones(hero_type)
 
 func _on_deployment_position_selected(position: Vector2) -> void:
 	"""处理部署位置选择"""
-	var hero_manager = get_node_or_null("HeroManager") as HeroManager
+	var hero_manager = get_node_or_null("HeroManager")
 	if hero_manager:
 		hero_manager.deploy_hero_at_position(position)
 

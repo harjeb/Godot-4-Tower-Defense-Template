@@ -17,7 +17,7 @@ var path_highlight_lines: Array[Line2D] = []
 var showing_deployment_zones: bool = false
 var showing_skill_ranges: bool = false
 var current_hero_type: String = ""
-var current_hero_for_skills: HeroBase
+var current_hero_for_skills: Node
 
 # Visual settings
 var deployment_zone_color: Color = Color.GREEN
@@ -121,7 +121,7 @@ func highlight_enemy_paths() -> void:
 		path_highlight_lines.append(path_line)
 		add_child(path_line)
 
-func show_skill_ranges(hero: HeroBase) -> void:
+func show_skill_ranges(hero: Node) -> void:
 	"""Show skill ranges for deployed hero"""
 	if not hero or not is_instance_valid(hero):
 		return
@@ -140,7 +140,7 @@ func show_skill_ranges(hero: HeroBase) -> void:
 	for skill in hero.skills:
 		create_skill_range_indicator(hero, skill)
 
-func create_attack_range_indicator(hero: HeroBase) -> void:
+func create_attack_range_indicator(hero: Node) -> void:
 	"""Create attack range indicator for hero"""
 	var attack_range = hero.current_stats.get("attack_range", 0.0)
 	
@@ -156,7 +156,7 @@ func create_attack_range_indicator(hero: HeroBase) -> void:
 			skill_range_circles.append(range_circle)
 			add_child(range_circle)
 
-func create_skill_range_indicator(hero: HeroBase, skill: HeroSkill) -> void:
+func create_skill_range_indicator(hero: Node, skill: Node) -> void:
 	"""Create range indicator for specific skill"""
 	var skill_range = skill.get_area_of_effect()
 	
@@ -177,7 +177,7 @@ func create_skill_range_indicator(hero: HeroBase, skill: HeroSkill) -> void:
 			# Add skill label
 			create_skill_label(hero.global_position, skill_range, skill.skill_name, skill_color)
 
-func highlight_affected_areas(skill: HeroSkill, position: Vector2) -> void:
+func highlight_affected_areas(skill: Node, position: Vector2) -> void:
 	"""Highlight areas affected by skill cast"""
 	if not skill:
 		return
@@ -201,7 +201,7 @@ func highlight_affected_areas(skill: HeroSkill, position: Vector2) -> void:
 			# Add damage preview
 			show_damage_preview(skill, position, effect_radius)
 
-func show_damage_preview(skill: HeroSkill, center: Vector2, radius: float) -> void:
+func show_damage_preview(skill: Node, center: Vector2, radius: float) -> void:
 	"""Show damage preview for affected enemies"""
 	var gem_effect_system = get_gem_effect_system()
 	if not gem_effect_system:
@@ -213,7 +213,7 @@ func show_damage_preview(skill: HeroSkill, center: Vector2, radius: float) -> vo
 		if is_instance_valid(enemy):
 			create_damage_preview_label(enemy.global_position, skill, enemy)
 
-func create_damage_preview_label(position: Vector2, skill: HeroSkill, target: Node) -> void:
+func create_damage_preview_label(position: Vector2, skill: Node, target: Node) -> void:
 	"""Create damage preview label"""
 	var damage_label = Label.new()
 	damage_label.position = position + Vector2(-20, -30)
@@ -231,7 +231,7 @@ func create_damage_preview_label(position: Vector2, skill: HeroSkill, target: No
 	
 	add_child(damage_label)
 
-func calculate_preview_damage(skill: HeroSkill, target: Node) -> float:
+func calculate_preview_damage(skill: Node, target: Node) -> float:
 	"""Calculate preview damage for skill on target"""
 	if not current_hero_for_skills:
 		return 0.0
@@ -419,33 +419,33 @@ func clear_path_highlights() -> void:
 			line.queue_free()
 	path_highlight_lines.clear()
 
-func get_hero_manager() -> HeroManager:
+func get_hero_manager() -> Node:
 	"""Get reference to hero manager"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	var manager = tree.current_scene.get_node_or_null("HeroManager") as HeroManager
+	var manager = tree.current_scene.get_node_or_null("HeroManager")
 	if not manager:
 		# Try finding in main scene
 		var main = tree.current_scene.get_node_or_null("Main")
 		if main:
-			manager = main.get_node_or_null("HeroManager") as HeroManager
+			manager = main.get_node_or_null("HeroManager")
 	
 	return manager
 
-func get_gem_effect_system() -> GemEffectSystem:
+func get_gem_effect_system() -> Node:
 	"""Get reference to gem effect system"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	var system = tree.current_scene.get_node_or_null("GemEffectSystem") as GemEffectSystem
+	var system = tree.current_scene.get_node_or_null("GemEffectSystem")
 	if not system:
 		# Try finding in main scene
 		var main = tree.current_scene.get_node_or_null("Main")
 		if main:
-			system = main.get_node_or_null("GemEffectSystem") as GemEffectSystem
+			system = main.get_node_or_null("GemEffectSystem")
 	
 	return system
 
@@ -458,12 +458,12 @@ func is_showing_skills() -> bool:
 	"""Check if showing skill ranges"""
 	return showing_skill_ranges
 
-func update_hero_position(hero: HeroBase) -> void:
+func update_hero_position(hero: Node) -> void:
 	"""Update indicators for hero position change"""
 	if current_hero_for_skills == hero:
 		show_skill_ranges(hero)
 
-func preview_skill_cast(hero: HeroBase, skill: HeroSkill, target_position: Vector2) -> void:
+func preview_skill_cast(hero: Node, skill: Node, target_position: Vector2) -> void:
 	"""Preview skill cast effects"""
 	current_hero_for_skills = hero
 	highlight_affected_areas(skill, target_position)

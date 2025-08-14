@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3 uid="uid://bwx8dhkjns7qm"]
+
+[ext_resource type="Script" path="res://debug_main.gd" id="1_debug"]
+
+[node name="DebugMain" type="Node"]
+script = ExtResource("1_debug")
+
+[node name="Label" type="Label" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -50.0
+offset_right = 200.0
+offset_bottom = 50.0
+text = "调试模式启动中...
+正在测试地图加载
+按ESC退出"
+horizontal_alignment = 1
+vertical_alignment = 1

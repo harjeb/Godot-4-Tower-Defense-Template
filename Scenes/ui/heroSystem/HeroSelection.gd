@@ -97,13 +97,13 @@ func update_hero_descriptions() -> void:
 		var current_wave = wave_manager.current_wave
 		description_label.text = "第 %d 波 - 从以下5个英雄中选择1个" % current_wave
 
-func get_wave_manager() -> WaveManager:
+func get_wave_manager() -> Node:
 	"""Get reference to wave manager"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	return tree.current_scene.get_node_or_null("WaveManager") as WaveManager
+	return tree.current_scene.get_node_or_null("WaveManager")
 
 func is_selection_active() -> bool:
 	"""Check if selection is currently active"""
@@ -116,7 +116,7 @@ func get_selected_hero_type() -> String:
 	return available_heroes[0] if not available_heroes.is_empty() else ""
 
 # External interface for HeroManager
-func setup_from_hero_manager(hero_manager: HeroManager) -> void:
+func setup_from_hero_manager(hero_manager: Node) -> void:
 	"""Setup selection from hero manager"""
 	if not hero_manager:
 		return
@@ -149,10 +149,10 @@ func _exit_tree() -> void:
 			if hero_manager.is_connected("hero_selection_completed", _on_hero_selection_completed):
 				hero_manager.disconnect("hero_selection_completed", _on_hero_selection_completed)
 
-func get_hero_manager() -> HeroManager:
+func get_hero_manager() -> Node:
 	"""Get reference to hero manager"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	return tree.current_scene.get_node_or_null("HeroManager") as HeroManager
+	return tree.current_scene.get_node_or_null("HeroManager")

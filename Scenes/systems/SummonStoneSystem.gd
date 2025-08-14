@@ -145,7 +145,7 @@ func get_all_towers() -> Array:
 	var towers: Array = []
 	var turret_nodes = get_tree().get_nodes_in_group("turret")
 	for turret in turret_nodes:
-		if turret is Turret and turret.deployed:
+		if turret.get_script() and turret.get_script().get_global_name() == "Turret" and turret.get("deployed"):
 			towers.append(turret)
 	return towers
 
@@ -157,7 +157,7 @@ func get_enemies_in_range(center: Vector2, range_val: float) -> Array:
 			enemies.append(enemy)
 	return enemies
 
-func get_charge_system() -> ChargeSystem:
+func get_charge_system() -> Node:
 	return get_tree().current_scene.get_node_or_null("ChargeSystem")
 
 func apply_freeze_effect(enemy: Node2D, duration: float):

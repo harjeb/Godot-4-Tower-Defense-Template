@@ -9,7 +9,7 @@ signal buff_removed(slot_index: int)
 @onready var title_label: Label
 @onready var stats_label: Label
 
-var weapon_manager: WeaponWheelManager
+var weapon_manager: Node
 var wheel_slots: Array[WeaponWheelSlot] = []
 var wheel_radius: float = 120.0
 
@@ -118,10 +118,10 @@ func open_weapon_wheel():
 	if weapon_manager:
 		_on_weapon_wheel_updated(weapon_manager.get_weapon_wheel_data())
 
-func get_weapon_wheel_manager() -> WeaponWheelManager:
+func get_weapon_wheel_manager() -> Node:
 	var tree = get_tree()
 	if tree and tree.root:
-		return tree.root.get_node_or_null("WeaponWheelManager") as WeaponWheelManager
+		return tree.root.get_node_or_null("WeaponWheelManager")
 	return null
 
 # 内部轮盘槽位类

@@ -14,7 +14,7 @@ static func roll_drop(enemy_data: Dictionary) -> String:
 	
 	return ""
 
-static func create_drop_item(item_id: String, position: Vector2) -> ItemDrop:
+static func create_drop_item(item_id: String, position: Vector2) -> Node:
 	var item_drop = preload("res://Scenes/items/ItemDrop.gd").new()
 	item_drop.name = "ItemDrop_" + item_id
 	item_drop.item_id = item_id
@@ -62,16 +62,16 @@ static func pickup_item(drop_item: Node2D) -> bool:
 	
 	return false
 
-static func get_inventory_manager() -> InventoryManager:
+static func get_inventory_manager() -> Node:
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree and tree.current_scene:
 		var inventory_manager = tree.get_nodes_in_group("inventory_manager")
 		if inventory_manager.size() > 0:
-			return inventory_manager[0] as InventoryManager
+			return inventory_manager[0]
 		
 		# 尝试从根节点查找
 		var root = tree.root
-		return root.get_node_or_null("InventoryManager") as InventoryManager
+		return root.get_node_or_null("InventoryManager")
 	
 	return null
 

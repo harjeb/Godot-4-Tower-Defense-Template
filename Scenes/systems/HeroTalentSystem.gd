@@ -4,9 +4,9 @@ extends Node
 ## Hero Talent Management System
 ## Handles talent progression, selection, and effect application
 
-signal talent_selected(hero: HeroBase, talent_id: String, level: int)
-signal talent_effects_applied(hero: HeroBase, talent_id: String)
-signal talent_selection_offered(hero: HeroBase, talents: Array[Dictionary])
+signal talent_selected(hero: Node, talent_id: String, level: int)
+signal talent_effects_applied(hero: Node, talent_id: String)
+signal talent_selection_offered(hero: Node, talents: Array[Dictionary])
 
 # Talent system state
 var active_talent_effects: Dictionary = {} # hero -> {talent_id: effects}
@@ -27,7 +27,7 @@ func setup_connections() -> void:
 	# We'll connect to heroes when they're created via HeroManager
 	pass
 
-func connect_to_hero(hero: HeroBase) -> void:
+func connect_to_hero(hero: Node) -> void:
 	"""Connect talent system to a specific hero"""
 	if not hero:
 		return
@@ -39,7 +39,7 @@ func connect_to_hero(hero: HeroBase) -> void:
 	if not active_talent_effects.has(hero):
 		active_talent_effects[hero] = {}
 
-func _on_hero_leveled_up(hero: HeroBase, new_level: int) -> void:
+func _on_hero_leveled_up(hero: Node, new_level: int) -> void:
 	"""Handle hero level up for talent selection"""
 	if not hero or new_level not in TALENT_LEVELS:
 		return
@@ -60,7 +60,7 @@ func _on_hero_leveled_up(hero: HeroBase, new_level: int) -> void:
 	
 	talent_selection_offered.emit(hero, talent_options)
 
-func get_talent_options(hero: HeroBase, level: int) -> Array[Dictionary]:
+func get_talent_options(hero: Node, level: int) -> Array[Dictionary]:
 	"""Get talent options for hero at specific level"""
 	if not hero or not Data.hero_talents.has(hero.hero_type):
 		return []
@@ -73,7 +73,7 @@ func get_talent_options(hero: HeroBase, level: int) -> Array[Dictionary]:
 	
 	return hero_talents[level_key].duplicate(true)
 
-func apply_talent(hero: HeroBase, talent_id: String) -> void:
+func apply_talent(hero: Node, talent_id: String) -> void:
 	"""Apply selected talent to hero"""
 	if not hero:
 		push_error("Invalid hero for talent application")
@@ -101,7 +101,7 @@ func apply_talent(hero: HeroBase, talent_id: String) -> void:
 	talent_selected.emit(hero, talent_id, hero.current_level)
 	talent_effects_applied.emit(hero, talent_id)
 
-func find_talent_data(hero: HeroBase, talent_id: String) -> Dictionary:
+func find_talent_data(hero: Node, talent_id: String) -> Dictionary:
 	"""Find talent data by ID in hero's talent tree"""
 	if not Data.hero_talents.has(hero.hero_type):
 		return {}
@@ -117,7 +117,7 @@ func find_talent_data(hero: HeroBase, talent_id: String) -> Dictionary:
 	
 	return {}
 
-func apply_talent_effects(hero: HeroBase, talent_data: Dictionary) -> void:
+func apply_talent_effects(hero: Node, talent_data: Dictionary) -> void:
 	"""Apply talent effects to hero"""
 	if not hero or not talent_data.has("effects"):
 		return
@@ -129,7 +129,7 @@ func apply_talent_effects(hero: HeroBase, talent_data: Dictionary) -> void:
 		var effect_value = effects[effect_key]
 		apply_single_talent_effect(hero, effect_key, effect_value)
 
-func apply_single_talent_effect(hero: HeroBase, effect_key: String, effect_value) -> void:
+func apply_single_talent_effect(hero: Node, effect_key: String, effect_value) -> void:
 	"""Apply individual talent effect"""
 	match effect_key:
 		# Shadow Strike enhancements
@@ -173,7 +173,7 @@ func apply_single_talent_effect(hero: HeroBase, effect_key: String, effect_value
 		_:
 			push_warning("Unknown talent effect: " + effect_key)
 
-func modify_skill_property(hero: HeroBase, skill_id: String, property: String, value, is_additive: bool) -> void:
+func modify_skill_property(hero: Node, skill_id: String, property: String, value, is_additive: bool) -> void:
 	"""Modify a specific skill property"""
 	var skill = hero.get_skill_by_id(skill_id)
 	if not skill:
@@ -187,27 +187,27 @@ func modify_skill_property(hero: HeroBase, skill_id: String, property: String, v
 	else:
 		skill.skill_data[property] *= value
 
-func modify_all_skill_auras(hero: HeroBase, property_suffix: String, value) -> void:
+func modify_all_skill_auras(hero: Node, property_suffix: String, value) -> void:
 	"""Modify aura properties for all skills"""
 	for skill in hero.skills:
 		if skill.skill_data.has("aura_radius"):
 			if property_suffix == "radius_multiplier":
 				skill.skill_data["aura_radius"] *= value
 
-func add_skill_effect_property(hero: HeroBase, property: String, value) -> void:
+func add_skill_effect_property(hero: Node, property: String, value) -> void:
 	"""Add new property to all applicable skills"""
 	for skill in hero.skills:
 		if skill.skill_data.has("aura_radius"):
 			skill.skill_data[property] = value
 
-func get_talent_effects(hero: HeroBase) -> Dictionary:
+func get_talent_effects(hero: Node) -> Dictionary:
 	"""Get all active talent effects for hero"""
 	if not active_talent_effects.has(hero):
 		return {}
 	
 	return active_talent_effects[hero].duplicate(true)
 
-func get_hero_talent_summary(hero: HeroBase) -> Dictionary:
+func get_hero_talent_summary(hero: Node) -> Dictionary:
 	"""Get summary of hero's talents"""
 	if not hero:
 		return {}
@@ -228,7 +228,7 @@ func get_hero_talent_summary(hero: HeroBase) -> Dictionary:
 	
 	return summary
 
-func can_select_talent(hero: HeroBase, talent_id: String) -> bool:
+func can_select_talent(hero: Node, talent_id: String) -> bool:
 	"""Check if hero can select specific talent"""
 	if not hero or not hero.pending_talent_selection:
 		return false
@@ -284,7 +284,7 @@ func format_effect_description(effect_key: String, value) -> String:
 		_:
 			return effect_key + ": " + str(value)
 
-func validate_talent_selection(hero: HeroBase, talent_id: String) -> Dictionary:
+func validate_talent_selection(hero: Node, talent_id: String) -> Dictionary:
 	"""Validate talent selection and return result"""
 	var result = {
 		"valid": false,
@@ -313,7 +313,7 @@ func validate_talent_selection(hero: HeroBase, talent_id: String) -> Dictionary:
 	result.talent_data = talent_data
 	return result
 
-func reset_hero_talents(hero: HeroBase) -> void:
+func reset_hero_talents(hero: Node) -> void:
 	"""Reset all talents for hero (for testing/respec)"""
 	if not hero:
 		return
@@ -337,7 +337,7 @@ func get_talent_tree_for_hero(hero_type: String) -> Dictionary:
 	
 	return Data.hero_talents[hero_type].duplicate(true)
 
-func get_talent_recommendations(hero: HeroBase) -> Array[String]:
+func get_talent_recommendations(hero: Node) -> Array[String]:
 	"""Get recommended talents for hero based on current state"""
 	if not hero or hero.available_talents.is_empty():
 		return []
@@ -368,7 +368,7 @@ func get_talent_recommendations(hero: HeroBase) -> Array[String]:
 	
 	return recommendations
 
-func has_talent_available(hero: HeroBase, talent_id: String) -> bool:
+func has_talent_available(hero: Node, talent_id: String) -> bool:
 	"""Check if specific talent is available for selection"""
 	for talent in hero.available_talents:
 		if talent.id == talent_id:

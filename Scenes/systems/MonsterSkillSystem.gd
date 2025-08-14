@@ -103,7 +103,7 @@ func trigger_petrification(enemy: Node2D) -> void:
 	skill_triggered.emit(enemy, "petrification")
 
 ## Apply frost effect to a tower
-func apply_frost_effect(tower: Turret, skill_data: Dictionary) -> void:
+func apply_frost_effect(tower: Node, skill_data: Dictionary) -> void:
 	if not is_instance_valid(tower):
 		return
 	
@@ -200,7 +200,7 @@ func apply_petrification_effect(enemy: Node2D, skill_data: Dictionary) -> void:
 	skill_effect_applied.emit(enemy, "petrification", skill_data.duration)
 
 ## Apply stun effect to tower
-func apply_stun_effect(tower: Turret, skill_data: Dictionary) -> void:
+func apply_stun_effect(tower: Node, skill_data: Dictionary) -> void:
 	if not is_instance_valid(tower):
 		return
 	
@@ -226,7 +226,7 @@ func get_towers_in_range(center: Vector2, range: float) -> Array:
 	# Use group-based approach for better flexibility
 	var turret_nodes = get_tree().get_nodes_in_group("turret")
 	for turret in turret_nodes:
-		if turret is Turret and turret.deployed:
+		if turret.get_script() and turret.get_script().get_global_name() == "Turret" and turret.get("deployed"):
 			if turret.global_position.distance_to(center) <= range:
 				towers.append(turret)
 	

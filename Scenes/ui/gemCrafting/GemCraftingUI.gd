@@ -9,7 +9,7 @@ signal gem_crafted(gem_id: String)
 @onready var title_label: Label
 @onready var scroll_container: ScrollContainer
 
-var inventory_manager: InventoryManager
+var inventory_manager: Node
 var crafting_recipes: Array[CraftingRecipe] = []
 
 func _ready():
@@ -115,10 +115,10 @@ func open_crafting():
 	show()
 	update_crafting_recipes()
 
-func get_inventory_manager() -> InventoryManager:
+func get_inventory_manager() -> Node:
 	var tree = get_tree()
 	if tree and tree.root:
-		return tree.root.get_node_or_null("InventoryManager") as InventoryManager
+		return tree.root.get_node_or_null("InventoryManager")
 	return null
 
 # 内部合成配方类
@@ -128,7 +128,7 @@ class CraftingRecipe:
 	signal gem_crafted(gem_id: String)
 	
 	var craft_info: Dictionary
-	var inventory_manager: InventoryManager
+	var inventory_manager: Node
 	var craft_button: Button
 	var result_icon: TextureRect
 	var materials_container: HBoxContainer
@@ -173,7 +173,7 @@ class CraftingRecipe:
 		craft_button.pressed.connect(_on_craft_pressed)
 		info_container.add_child(craft_button)
 	
-	func setup_recipe(craft_data: Dictionary, manager: InventoryManager):
+	func setup_recipe(craft_data: Dictionary, manager: Node):
 		craft_info = craft_data
 		inventory_manager = manager
 		

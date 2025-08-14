@@ -7,7 +7,7 @@ signal stone_slot_clicked(slot: int, position: Vector2)
 @onready var cooldown_overlays: Array[Control] = []
 @onready var progress_indicators: Array[TextureProgressBar] = []
 
-var summon_system: SummonStoneSystem
+var summon_system: Node
 
 func _ready():
 	setup_ui()

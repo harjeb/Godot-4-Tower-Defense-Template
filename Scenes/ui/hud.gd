@@ -5,10 +5,10 @@ var waited := 0
 var open_details_pane : PanelContainer
 
 # 新增 UI 系统
-var inventory_ui: InventoryUI
-var weapon_wheel_ui: WeaponWheelUI
-var gem_crafting_ui: GemCraftingUI
-var settings_ui: SettingsUI
+var inventory_ui: Node
+var weapon_wheel_ui: Node
+var gem_crafting_ui: Node
+var settings_ui: Node
 var ui_buttons_container: HBoxContainer
 
 func _ready():
@@ -70,10 +70,10 @@ func reset():
 
 # 新增方法
 # 新增属性
-var summon_stone_ui: SummonStoneUI
-var tech_tree_ui: TechTreeUI
-var tower_tech_ui: TowerTechUI
-var wave_manager: WaveManager
+var summon_stone_ui: Node
+var tech_tree_ui: Node
+var tower_tech_ui: Node
+var wave_manager: Node
 
 # 波次控制UI
 var wave_countdown_panel: Panel

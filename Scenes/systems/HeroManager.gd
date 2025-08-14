@@ -4,19 +4,19 @@ extends Node
 ## Hero Management System
 ## Handles hero deployment, lifecycle management, wave-based hero selection, and global hero coordination
 
-signal hero_deployed(hero: HeroBase, position: Vector2)
-signal hero_died(hero: HeroBase)
-signal hero_respawned(hero: HeroBase)
-signal hero_leveled_up(hero: HeroBase, new_level: int)
+signal hero_deployed(hero: Node, position: Vector2)
+signal hero_died(hero: Node)
+signal hero_respawned(hero: Node)
+signal hero_leveled_up(hero: Node, new_level: int)
 signal hero_selection_available(available_heroes: Array[String])
 signal hero_selection_completed(selected_hero: String)
 signal hero_selection_started(hero_type: String)
 signal all_heroes_dead()
-signal hero_experience_gained(hero: HeroBase, amount: int)
-signal talent_selection_requested(hero: HeroBase, talents: Array[Dictionary])
+signal hero_experience_gained(hero: Node, amount: int)
+signal talent_selection_requested(hero: Node, talents: Array[Dictionary])
 
 # Hero management state
-var deployed_heroes: Array[HeroBase] = []
+var deployed_heroes: Array[Node] = []
 var hero_selection_queue: Array[String] = [] # Heroes available for selection
 var max_deployed_heroes: int = 5
 var next_selection_wave: int = 3 # Wave when next hero selection is available
@@ -29,7 +29,7 @@ var available_hero_pool: Array[String] = []
 
 # Wave integration
 var current_wave: int = 0
-var wave_manager: WaveManager
+var wave_manager: Node
 
 # Hero experience and progression
 var global_experience_multiplier: float = 1.0
@@ -134,12 +134,12 @@ func connect_to_wave_system() -> void:
 	if not tree or not tree.current_scene:
 		return
 	
-	wave_manager = tree.current_scene.get_node_or_null("WaveManager") as WaveManager
+	wave_manager = tree.current_scene.get_node_or_null("WaveManager")
 	if not wave_manager:
 		# Try finding in main scene
 		var main = tree.current_scene.get_node_or_null("Main")
 		if main:
-			wave_manager = main.get_node_or_null("WaveManager") as WaveManager
+			wave_manager = main.get_node_or_null("WaveManager")
 
 func update_heroes_system() -> void:
 	"""Update all hero-related systems"""
@@ -160,7 +160,7 @@ func update_hero_states() -> void:
 		# Update hero-specific logic if needed
 		update_individual_hero(hero)
 
-func update_individual_hero(hero: HeroBase) -> void:
+func update_individual_hero(hero: Node) -> void:
 	"""Update individual hero state"""
 	if not hero:
 		return
@@ -274,13 +274,13 @@ func show_hero_deployment_interface(hero_type: String) -> void:
 	# Enable deployment mode
 	set_deployment_mode(true, hero_type)
 
-func get_hero_range_indicator() -> HeroRangeIndicator:
+func get_hero_range_indicator() -> Node:
 	"""Get hero range indicator system"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	return tree.current_scene.get_node_or_null("HeroRangeIndicator") as HeroRangeIndicator
+	return tree.current_scene.get_node_or_null("HeroRangeIndicator")
 
 func set_deployment_mode(enabled: bool, hero_type: String = "") -> void:
 	"""Enable or disable hero deployment mode"""
@@ -300,7 +300,7 @@ func get_pending_deployment_hero() -> String:
 	"""Get hero type pending deployment"""
 	return get_meta("pending_deployment_hero", "")
 
-func deploy_hero(hero_type: String, position: Vector2) -> HeroBase:
+func deploy_hero(hero_type: String, position: Vector2) -> Node:
 	"""Deploy a hero at specified position"""
 	# Validate deployment
 	if not can_deploy_hero_at_position(position):
@@ -343,7 +343,7 @@ func deploy_hero(hero_type: String, position: Vector2) -> HeroBase:
 	hero_deployed.emit(hero, position)
 	return hero
 
-func create_hero_instance(hero_type: String) -> HeroBase:
+func create_hero_instance(hero_type: String) -> Node:
 	"""Create hero instance from hero type"""
 	var hero_data = Data.heroes[hero_type]
 	var scene_path = hero_data.get("scene", "")
@@ -357,9 +357,9 @@ func create_hero_instance(hero_type: String) -> HeroBase:
 		push_error("Could not load hero scene: " + scene_path)
 		return null
 	
-	var hero = hero_scene.instantiate() as HeroBase
+	var hero = hero_scene.instantiate()
 	if not hero:
-		push_error("Hero scene does not contain HeroBase")
+		push_error("Hero scene does not contain valid hero")
 		return null
 	
 	# Configure hero
@@ -368,7 +368,7 @@ func create_hero_instance(hero_type: String) -> HeroBase:
 	
 	return hero
 
-func connect_hero_signals(hero: HeroBase) -> void:
+func connect_hero_signals(hero: Node) -> void:
 	"""Connect hero signals to manager"""
 	if hero.has_signal("hero_died"):
 		hero.connect("hero_died", _on_hero_died)
@@ -401,7 +401,7 @@ func can_deploy_hero_at_position(position: Vector2) -> bool:
 	
 	return true
 
-func mark_deployment_zone_occupied(position: Vector2, hero: HeroBase) -> void:
+func mark_deployment_zone_occupied(position: Vector2, hero: Node) -> void:
 	"""Mark closest deployment zone as occupied"""
 	var closest_zone = null
 	var closest_distance = INF
@@ -432,24 +432,24 @@ func get_living_hero_count() -> int:
 			count += 1
 	return count
 
-func get_hero_by_name(hero_name: String) -> HeroBase:
+func get_hero_by_name(hero_name: String) -> Node:
 	"""Get deployed hero by name"""
 	for hero in deployed_heroes:
 		if is_instance_valid(hero) and hero.name == hero_name:
 			return hero
 	return null
 
-func get_heroes_by_type(hero_type: String) -> Array[HeroBase]:
+func get_heroes_by_type(hero_type: String) -> Array[Node]:
 	"""Get all deployed heroes of specific type"""
-	var heroes: Array[HeroBase] = []
+	var heroes: Array[Node] = []
 	for hero in deployed_heroes:
 		if is_instance_valid(hero) and hero.hero_type == hero_type:
 			heroes.append(hero)
 	return heroes
 
-func get_nearest_hero_to_position(position: Vector2) -> HeroBase:
+func get_nearest_hero_to_position(position: Vector2) -> Node:
 	"""Get nearest hero to a position"""
-	var nearest_hero: HeroBase = null
+	var nearest_hero: Node = null
 	var nearest_distance = INF
 	
 	for hero in deployed_heroes:
@@ -461,7 +461,7 @@ func get_nearest_hero_to_position(position: Vector2) -> HeroBase:
 	
 	return nearest_hero
 
-func remove_hero(hero: HeroBase) -> void:
+func remove_hero(hero: Node) -> void:
 	"""Remove hero from deployment"""
 	if not hero:
 		return
@@ -480,7 +480,7 @@ func remove_hero(hero: HeroBase) -> void:
 	if is_instance_valid(hero):
 		hero.queue_free()
 
-func request_talent_selection(hero: HeroBase) -> void:
+func request_talent_selection(hero: Node) -> void:
 	"""Request talent selection for hero"""
 	if not hero or hero.available_talents.is_empty():
 		return
@@ -527,19 +527,19 @@ func _on_enemy_destroyed(remain: int) -> void:
 			# Give experience based on proximity or other criteria
 			hero.gain_experience(experience_amount)
 
-func _on_hero_died(hero: HeroBase) -> void:
+func _on_hero_died(hero: Node) -> void:
 	"""Handle hero death"""
 	hero_died.emit(hero)
 
-func _on_hero_respawned(hero: HeroBase) -> void:
+func _on_hero_respawned(hero: Node) -> void:
 	"""Handle hero respawn"""
 	hero_respawned.emit(hero)
 
-func _on_hero_leveled_up(hero: HeroBase, new_level: int) -> void:
+func _on_hero_leveled_up(hero: Node, new_level: int) -> void:
 	"""Handle hero level up"""
 	hero_leveled_up.emit(hero, new_level)
 
-func _on_hero_experience_gained(hero: HeroBase, amount: int, new_total: int) -> void:
+func _on_hero_experience_gained(hero: Node, amount: int, new_total: int) -> void:
 	"""Handle hero experience gain"""
 	hero_experience_gained.emit(hero, amount)
 
@@ -549,13 +549,13 @@ func apply_wave_modifiers_to_heroes() -> void:
 	if level_modifier_system:
 		level_modifier_system.apply_modifiers_to_heroes(deployed_heroes)
 
-func get_level_modifier_system() -> LevelModifierSystem:
+func get_level_modifier_system() -> Node:
 	"""Get level modifier system"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	return tree.current_scene.get_node_or_null("LevelModifierSystem") as LevelModifierSystem
+	return tree.current_scene.get_node_or_null("LevelModifierSystem")
 
 # Save/Load system
 func get_save_data() -> Dictionary:

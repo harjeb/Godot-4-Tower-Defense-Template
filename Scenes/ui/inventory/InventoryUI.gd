@@ -9,7 +9,7 @@ signal gem_selected(gem_data: Dictionary)
 @onready var title_label: Label
 @onready var scroll_container: ScrollContainer
 
-var inventory_manager: InventoryManager
+var inventory_manager: Node
 var slot_scene: PackedScene
 var inventory_slots: Array[InventorySlot] = []
 
@@ -105,10 +105,10 @@ func open_inventory():
 	if inventory_manager:
 		_on_inventory_updated(inventory_manager.get_inventory_data())
 
-func get_inventory_manager() -> InventoryManager:
+func get_inventory_manager() -> Node:
 	var tree = get_tree()
 	if tree and tree.root:
-		return tree.root.get_node_or_null("InventoryManager") as InventoryManager
+		return tree.root.get_node_or_null("InventoryManager")
 	return null
 
 # 内部槽位类

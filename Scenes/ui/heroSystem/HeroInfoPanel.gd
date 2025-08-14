@@ -18,7 +18,7 @@ extends Control
 @onready var skill3_label: Label = $Panel/StatsContainer/SkillsContainer/Skill3Label
 
 # State
-var current_hero: HeroBase = null
+var current_hero: Node = null
 var update_timer: float = 0.0
 var update_interval: float = 0.2  # Update every 200ms
 
@@ -34,7 +34,7 @@ func _process(delta: float) -> void:
 			update_hero_info()
 			update_timer = 0.0
 
-func show_hero_info(hero: HeroBase) -> void:
+func show_hero_info(hero: Node) -> void:
 	"""Show information for specific hero"""
 	if not hero or not is_instance_valid(hero):
 		return
@@ -131,7 +131,7 @@ func update_skills_info() -> void:
 		
 		$Panel/StatsContainer/SkillsContainer.add_child(skill_label)
 
-func get_skill_color(skill: HeroSkill) -> Color:
+func get_skill_color(skill: Node) -> Color:
 	"""Get color for skill based on type"""
 	match skill.skill_type:
 		"A":
@@ -152,16 +152,16 @@ func set_panel_size(size: Vector2) -> void:
 	custom_minimum_size = size
 	size = size
 
-func is_showing_hero(hero: HeroBase) -> bool:
+func is_showing_hero(hero: Node) -> bool:
 	"""Check if panel is showing specific hero"""
 	return current_hero == hero and is_instance_valid(current_hero)
 
-func get_current_hero() -> HeroBase:
+func get_current_hero() -> Node:
 	"""Get currently displayed hero"""
 	return current_hero if is_instance_valid(current_hero) else null
 
 # External interface for HeroManager
-func setup_from_hero_manager(hero_manager: HeroManager) -> void:
+func setup_from_hero_manager(hero_manager: Node) -> void:
 	"""Setup panel from hero manager"""
 	if not hero_manager:
 		return
@@ -176,17 +176,17 @@ func setup_from_hero_manager(hero_manager: HeroManager) -> void:
 	if hero_manager.has_signal("hero_respawned"):
 		hero_manager.connect("hero_respawned", _on_hero_respawned)
 
-func _on_hero_deployed(hero: HeroBase, position: Vector2) -> void:
+func _on_hero_deployed(hero: Node, position: Vector2) -> void:
 	"""Handle hero deployment"""
 	# Auto-show info for deployed hero
 	show_hero_info(hero)
 
-func _on_hero_died(hero: HeroBase) -> void:
+func _on_hero_died(hero: Node) -> void:
 	"""Handle hero death"""
 	if current_hero == hero:
 		update_hero_status()
 
-func _on_hero_respawned(hero: HeroBase) -> void:
+func _on_hero_respawned(hero: Node) -> void:
 	"""Handle hero respawn"""
 	if current_hero == hero:
 		update_hero_status()
@@ -208,10 +208,10 @@ func _exit_tree() -> void:
 			if hero_manager.is_connected("hero_respawned", _on_hero_respawned):
 				hero_manager.disconnect("hero_respawned", _on_hero_respawned)
 
-func get_hero_manager() -> HeroManager:
+func get_hero_manager() -> Node:
 	"""Get reference to hero manager"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	return tree.current_scene.get_node_or_null("HeroManager") as HeroManager
+	return tree.current_scene.get_node_or_null("HeroManager")

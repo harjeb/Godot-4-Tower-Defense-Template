@@ -152,7 +152,7 @@ func get_all_towers() -> Array:
 	if get_tree() and get_tree().current_scene:
 		var all_nodes = get_tree().get_nodes_in_group("turret")
 		for node in all_nodes:
-			if node is Turret and node.deployed:
+			if node.get_script() and node.get_script().get_global_name() == "Turret" and node.get("deployed"):
 				towers.append(node)
 	return towers
 

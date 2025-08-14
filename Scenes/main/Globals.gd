@@ -8,14 +8,14 @@ signal wave_cleared(wait_time: float)
 signal enemy_destroyed(remain: int)
 
 ## Hero System Signals
-signal hero_deployed(hero: HeroBase, position: Vector2)
-signal hero_died(hero: HeroBase)
-signal hero_respawned(hero: HeroBase) 
-signal hero_skill_cast(hero: HeroBase, skill: HeroSkill)
+signal hero_deployed(hero: Node, position: Vector2)
+signal hero_died(hero: Node)
+signal hero_respawned(hero: Node) 
+signal hero_skill_cast(hero: Node, skill: Resource)
 signal level_modifiers_generated(modifiers: Array)
-signal talent_selection_available(hero: HeroBase, level: int)
+signal talent_selection_available(hero: Node, level: int)
 signal hero_selection_offered(available_heroes: Array[String])
-signal hero_experience_gained(hero: HeroBase, amount: int)
+signal hero_experience_gained(hero: Node, amount: int)
 
 ## Game state variables with proper typing
 var selected_map: String = ""
@@ -51,7 +51,7 @@ func restart_current_level() -> void:
 
 ## Hero System Integration Methods
 
-func deploy_hero(hero_type: String, position: Vector2) -> HeroBase:
+func deploy_hero(hero_type: String, position: Vector2) -> Node:
 	"""Deploy a hero at specified position"""
 	var hero_manager = get_hero_manager()
 	if not hero_manager:
@@ -64,49 +64,51 @@ func deploy_hero(hero_type: String, position: Vector2) -> HeroBase:
 	
 	return hero
 
-func get_hero_manager() -> HeroManager:
+func get_hero_manager() -> Node:
 	"""Get reference to hero manager"""
 	if not is_instance_valid(main_node):
 		return null
 	
-	var manager = main_node.get_node_or_null("HeroManager") as HeroManager
+	var manager = main_node.get_node_or_null("HeroManager")
 	if not manager:
 		# Try finding in main scene children
 		for child in main_node.get_children():
-			if child is HeroManager:
+			if child.get_script() and child.get_script().get_global_name() == "HeroManager":
 				return child
 	
 	return manager
 
-func get_level_modifier_system() -> LevelModifierSystem:
+func get_level_modifier_system() -> Node:
 	"""Get reference to level modifier system"""
 	if not is_instance_valid(main_node):
 		return null
 	
-	return main_node.get_node_or_null("LevelModifierSystem") as LevelModifierSystem
+	return main_node.get_node_or_null("LevelModifierSystem")
 
-func get_hero_talent_system() -> HeroTalentSystem:
+func get_hero_talent_system() -> Node:
 	"""Get reference to hero talent system"""
 	if not is_instance_valid(main_node):
 		return null
 	
-	return main_node.get_node_or_null("HeroTalentSystem") as HeroTalentSystem
+	return main_node.get_node_or_null("HeroTalentSystem")
 
-func get_deployed_heroes() -> Array[HeroBase]:
+func get_deployed_heroes() -> Array:
 	"""Get all currently deployed heroes"""
 	var hero_manager = get_hero_manager()
-	if hero_manager:
+	if hero_manager and hero_manager.has_method("get_deployed_heroes"):
+		return hero_manager.get_deployed_heroes()
+	elif hero_manager and "deployed_heroes" in hero_manager:
 		return hero_manager.deployed_heroes
 	
 	return []
 
-func get_living_heroes() -> Array[HeroBase]:
+func get_living_heroes() -> Array:
 	"""Get all currently living heroes"""
 	var heroes = get_deployed_heroes()
-	var living_heroes: Array[HeroBase] = []
+	var living_heroes: Array = []
 	
 	for hero in heroes:
-		if is_instance_valid(hero) and hero.is_alive:
+		if is_instance_valid(hero) and hero.get("is_alive"):
 			living_heroes.append(hero)
 	
 	return living_heroes
@@ -123,7 +125,7 @@ func apply_wave_modifiers(modifiers: Array) -> void:
 	if level_modifier_system:
 		level_modifier_system.apply_level_modifiers(modifiers)
 
-func notify_hero_experience_gained(hero: HeroBase, amount: int) -> void:
+func notify_hero_experience_gained(hero: Node, amount: int) -> void:
 	"""Notify systems of hero experience gain"""
 	hero_experience_gained.emit(hero, amount)
 

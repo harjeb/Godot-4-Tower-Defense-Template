@@ -3,8 +3,8 @@ extends Control
 
 signal tower_tech_closed()
 
-var tower_tech_system: TowerTechSystem
-var tech_point_system: TechPointSystem
+var tower_tech_system: Node
+var tech_point_system: Node
 var current_tower_type: String = ""
 var tech_buttons: Dictionary = {}
 

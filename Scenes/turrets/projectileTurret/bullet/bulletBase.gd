@@ -19,7 +19,7 @@ var time: float = 1.0
 var element: String = "neutral"
 var turret_category: String = ""
 var equipped_gem: Dictionary = {}
-var source_tower: Turret = null  # 发射这个子弹的塔
+var source_tower: Node = null  # 发射这个子弹的塔
 var gem_effects: Array = []      # 宝石效果列表
 
 func _process(delta):
@@ -80,16 +80,16 @@ func calculate_enhanced_damage(target_element: String) -> float:
 	
 	return final_damage
 
-func get_weapon_wheel_manager() -> WeaponWheelManager:
+func get_weapon_wheel_manager() -> Node:
 	var tree = get_tree()
 	if tree and tree.root:
-		return tree.root.get_node_or_null("WeaponWheelManager") as WeaponWheelManager
+		return tree.root.get_node_or_null("WeaponWheelManager")
 	return null
 
-func get_charge_system() -> ChargeSystem:
+func get_charge_system() -> Node:
 	var tree = get_tree()
 	if tree and tree.current_scene:
-		return tree.current_scene.get_node_or_null("ChargeSystem") as ChargeSystem
+		return tree.current_scene.get_node_or_null("ChargeSystem")
 	return null
 
 func _on_disappear_timer_timeout():
@@ -112,14 +112,14 @@ func _apply_gem_effects(target: Node):
 		if not effect_data.is_empty():
 			effect_manager.apply_effect(target, effect_name, effect_data, self)
 
-func get_effect_manager() -> EffectManager:
+func get_effect_manager() -> Node:
 	var tree = get_tree()
 	if tree and tree.root:
-		return tree.root.get_node_or_null("EffectManager") as EffectManager
+		return tree.root.get_node_or_null("EffectManager")
 	return null
 
 # 设置宝石效果（由发射塔调用）
-func setup_gem_effects(tower: Turret):
+func setup_gem_effects(tower: Node):
 	if not tower or not tower.has_method("get_active_gem_effects"):
 		return
 	

@@ -285,14 +285,14 @@ func apply_hero_aura_multiplier(multiplier: float) -> void:
 					skill.skill_data["aura_radius"] *= multiplier
 			track_hero_effect(hero, "aura_multiplier_" + str(multiplier))
 
-func apply_modifiers_to_heroes(heroes: Array[HeroBase]) -> void:
+func apply_modifiers_to_heroes(heroes: Array[Node]) -> void:
 	"""Apply current modifiers to specific hero list"""
 	for modifier in active_modifiers:
 		for hero in heroes:
 			if is_instance_valid(hero):
 				apply_modifier_to_single_hero(modifier, hero)
 
-func apply_modifier_to_single_hero(modifier: Dictionary, hero: HeroBase) -> void:
+func apply_modifier_to_single_hero(modifier: Dictionary, hero: Node) -> void:
 	"""Apply modifier to single hero"""
 	if not modifier.has("effects") or not hero:
 		return
@@ -303,7 +303,7 @@ func apply_modifier_to_single_hero(modifier: Dictionary, hero: HeroBase) -> void
 		var effect_value = effects[effect_key]
 		apply_single_hero_effect(hero, effect_key, effect_value)
 
-func apply_single_hero_effect(hero: HeroBase, effect_key: String, effect_value) -> void:
+func apply_single_hero_effect(hero: Node, effect_key: String, effect_value) -> void:
 	"""Apply single effect to hero"""
 	match effect_key:
 		"hero_damage_multiplier", "damage_multiplier":
@@ -320,39 +320,39 @@ func apply_single_hero_effect(hero: HeroBase, effect_key: String, effect_value) 
 			for skill in hero.skills:
 				skill.cooldown *= effect_value
 
-func get_all_heroes() -> Array[HeroBase]:
+func get_all_heroes() -> Array[Node]:
 	"""Get all deployed heroes"""
 	var hero_manager = get_hero_manager()
 	if hero_manager:
 		return hero_manager.deployed_heroes
 	
 	# Fallback: find heroes in scene
-	var heroes: Array[HeroBase] = []
+	var heroes: Array[Node] = []
 	var tree = get_tree()
 	if tree and tree.current_scene:
 		var hero_nodes = tree.current_scene.get_tree().get_nodes_in_group("heroes")
 		for node in hero_nodes:
-			if node is HeroBase:
-				heroes.append(node as HeroBase)
+			if node.get_script() and node.get_script().get_global_name() == "HeroBase":
+				heroes.append(node)
 	
 	return heroes
 
-func get_hero_manager() -> HeroManager:
+func get_hero_manager() -> Node:
 	"""Get hero manager instance"""
 	var tree = get_tree()
 	if not tree or not tree.current_scene:
 		return null
 	
-	var manager = tree.current_scene.get_node_or_null("HeroManager") as HeroManager
+	var manager = tree.current_scene.get_node_or_null("HeroManager")
 	if not manager:
 		# Try finding in main scene
 		var main = tree.current_scene.get_node_or_null("Main")
 		if main:
-			manager = main.get_node_or_null("HeroManager") as HeroManager
+			manager = main.get_node_or_null("HeroManager")
 	
 	return manager
 
-func track_hero_effect(hero: HeroBase, effect_id: String) -> void:
+func track_hero_effect(hero: Node, effect_id: String) -> void:
 	"""Track applied effect for cleanup"""
 	if not applied_hero_effects.has(hero):
 		applied_hero_effects[hero] = []
