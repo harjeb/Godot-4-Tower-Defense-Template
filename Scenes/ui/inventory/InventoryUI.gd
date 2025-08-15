@@ -12,6 +12,7 @@ signal gem_selected(gem_data: Dictionary)
 var inventory_manager: Node
 var slot_scene: PackedScene
 var inventory_slots: Array[InventorySlot] = []
+var main_panel: Panel
 
 func _ready():
 	# 获取管理器引用
@@ -27,14 +28,13 @@ func _ready():
 
 func setup_ui():
 	# 创建主面板
-	var panel = Panel.new()
-	panel.size = Vector2(400, 500)
-	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	panel.position = Vector2(100, 100)
+	main_panel = Panel.new()
+	main_panel.size = Vector2(400, 500)
+	main_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	
-	# 添加背景样式
+	# 添加背景样式（与武器盘保持一致）
 	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(0.15, 0.15, 0.15, 0.9)  # 深灰色背景
+	style_box.bg_color = Color(0.15, 0.15, 0.15, 0.95)  # 深灰色背景，增加不透明度
 	style_box.border_width_left = 2
 	style_box.border_width_right = 2
 	style_box.border_width_top = 2
@@ -44,44 +44,38 @@ func setup_ui():
 	style_box.corner_radius_top_right = 8
 	style_box.corner_radius_bottom_left = 8
 	style_box.corner_radius_bottom_right = 8
-	panel.add_theme_stylebox_override("panel", style_box)
+	main_panel.add_theme_stylebox_override("panel", style_box)
 	
-	add_child(panel)
+	add_child(main_panel)
 	
-	# 创建标题（显示在拖拽区域内）
+	# 创建标题栏背景
+	var title_background = Panel.new()
+	title_background.position = Vector2(0, 0)
+	title_background.size = Vector2(400, 40)
+	
+	# 创建标题栏样式（确保背景透明，只显示边框）
+	var title_style = StyleBoxFlat.new()
+	title_style.bg_color = Color(0.25, 0.25, 0.3, 0.8)  # 蓝灰色背景
+	title_style.border_width_bottom = 1
+	title_style.border_color = Color(0.6, 0.6, 0.6, 0.5)
+	title_style.corner_radius_top_left = 8
+	title_style.corner_radius_top_right = 8
+	title_style.corner_radius_bottom_left = 0
+	title_style.corner_radius_bottom_right = 0
+	title_background.add_theme_stylebox_override("panel", title_style)
+	main_panel.add_child(title_background)
+	
+	# 创建标题
 	title_label = Label.new()
 	title_label.text = "📦 背包 (拖拽移动)"
-	title_label.position = Vector2(10, 10)
+	title_label.position = Vector2(10, 5)
 	title_label.size = Vector2(300, 30)
 	title_label.add_theme_color_override("font_color", Color.WHITE)
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	panel.add_child(title_label)
+	main_panel.add_child(title_label)
 	
-	# 创建专门的拖拽区域
-	var drag_area = Control.new()
-	drag_area.position = Vector2(0, 0)
-	drag_area.size = Vector2(400, 45)  # 覆盖标题栏区域
-	drag_area.tooltip_text = "拖拽此区域移动窗口"  # 添加提示
-	
-	# 添加拖拽区域的视觉背景 - 使用更明显的颜色
-	var drag_background = ColorRect.new()
-	drag_background.size = Vector2(400, 45)
-	drag_background.color = Color(0.25, 0.25, 0.3, 0.6)  # 更明显的蓝灰色背景
-	drag_area.add_child(drag_background)
-	
-	# 添加拖拽区域的边框
-	var drag_border = NinePatchRect.new()
-	drag_border.size = Vector2(400, 45)
-	var border_style = StyleBoxFlat.new()
-	border_style.bg_color = Color.TRANSPARENT
-	border_style.border_width_bottom = 1
-	border_style.border_color = Color(0.6, 0.6, 0.6, 0.5)
-	drag_background.add_theme_stylebox_override("panel", border_style)
-	
-	panel.add_child(drag_area)
-	
-	# 添加拖拽功能到拖拽区域
-	setup_panel_dragging(drag_area)
+	# 添加拖拽功能到标题栏
+	setup_panel_dragging(title_background)
 	
 	# 创建关闭按钮
 	close_button = Button.new()
@@ -89,13 +83,13 @@ func setup_ui():
 	close_button.position = Vector2(360, 10)
 	close_button.size = Vector2(30, 30)
 	close_button.pressed.connect(_on_close_button_pressed)
-	panel.add_child(close_button)
+	main_panel.add_child(close_button)
 	
 	# 创建滚动容器
 	scroll_container = ScrollContainer.new()
-	scroll_container.position = Vector2(10, 50)
-	scroll_container.size = Vector2(380, 440)
-	panel.add_child(scroll_container)
+	scroll_container.position = Vector2(10, 45)
+	scroll_container.size = Vector2(380, 445)
+	main_panel.add_child(scroll_container)
 	
 	# 创建网格容器
 	grid_container = GridContainer.new()
@@ -159,29 +153,19 @@ func get_inventory_manager() -> Node:
 var dragging = false
 var drag_start_position = Vector2.ZERO
 
-func setup_panel_dragging(control_node: Control):
-	control_node.gui_input.connect(_on_panel_input)
-	control_node.mouse_entered.connect(_on_drag_area_mouse_entered)
-	control_node.mouse_exited.connect(_on_drag_area_mouse_exited)
-
-func _on_drag_area_mouse_entered():
-	Input.set_default_cursor_shape(Input.CURSOR_DRAG)
-
-func _on_drag_area_mouse_exited():
-	if not dragging:
-		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+func setup_panel_dragging(panel_node: Control):
+	panel_node.gui_input.connect(_on_panel_input)
 
 func _on_panel_input(event: InputEvent):
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				dragging = true
-				drag_start_position = event.global_position - position
+				drag_start_position = event.global_position - main_panel.position
 			else:
 				dragging = false
-				Input.set_default_cursor_shape(Input.CURSOR_ARROW)  # 拖拽结束时恢复光标
 	elif event is InputEventMouseMotion and dragging:
-		position = event.global_position - drag_start_position
+		main_panel.position = event.global_position - drag_start_position
 
 # 内部槽位类
 class InventorySlot:
