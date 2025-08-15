@@ -107,27 +107,27 @@ func count_active_projectiles() -> int:
 			count = projectiles_node.get_child_count()
 	return count
 
-## Check performance thresholds and trigger warnings
+## Check performance thresholds and trigger warnings (console only)
 func check_performance_thresholds():
 	var avg_fps = get_average_fps()
 	
-	# FPS warnings
+	# FPS warnings (console only, no popups)
 	if avg_fps < CRITICAL_FPS:
-		performance_critical.emit("FPS", avg_fps)
+		print("性能警告: FPS过低 (%.1f < %.1f) - 启动紧急性能模式" % [avg_fps, CRITICAL_FPS])
 		enable_emergency_performance_mode()
 	elif avg_fps < WARNING_FPS:
-		performance_warning.emit("FPS", avg_fps, WARNING_FPS)
+		print("性能警告: FPS较低 (%.1f < %.1f) - 启用性能优化" % [avg_fps, WARNING_FPS])
 		enable_performance_optimizations()
 	
-	# Entity count warnings
+	# Entity count warnings (console only, no popups)
 	if current_tower_count > MAX_TOWERS:
-		performance_warning.emit("Tower Count", current_tower_count, MAX_TOWERS)
+		print("性能警告: 塔数量过多 (%d > %d)" % [current_tower_count, MAX_TOWERS])
 	
 	if current_monster_count > MAX_MONSTERS:
-		performance_warning.emit("Monster Count", current_monster_count, MAX_MONSTERS)
+		print("性能警告: 怪物数量过多 (%d > %d)" % [current_monster_count, MAX_MONSTERS])
 	
 	if current_projectile_count > MAX_PROJECTILES:
-		performance_warning.emit("Projectile Count", current_projectile_count, MAX_PROJECTILES)
+		print("性能警告: 投射物数量过多 (%d > %d)" % [current_projectile_count, MAX_PROJECTILES])
 		limit_projectiles()
 
 ## Enable performance optimizations when FPS drops
@@ -136,7 +136,7 @@ func enable_performance_optimizations():
 		return
 		
 	performance_mode_enabled = true
-	print("Performance mode enabled - reducing visual effects")
+	print("性能优化模式已启用 - 减少视觉效果")
 	
 	# Reduce visual effects
 	reduce_visual_effects()
@@ -150,7 +150,7 @@ func enable_emergency_performance_mode():
 		return
 		
 	visual_effects_reduced = true
-	print("Emergency performance mode - disabling non-essential effects")
+	print("紧急性能模式已启用 - 禁用非必要效果")
 	
 	# Disable particle effects
 	disable_particle_effects()
@@ -276,7 +276,7 @@ func reset_performance_optimizations():
 		performance_mode_enabled = false
 		visual_effects_reduced = false
 		update_frequency_reduced = false
-		print("Performance mode disabled - FPS restored")
+		print("性能模式已禁用 - FPS已恢复")
 		
 		# Re-enable effects
 		restore_visual_effects()

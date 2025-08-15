@@ -185,6 +185,17 @@ func get_damage(damage):
 	if defense > 0:
 		final_damage = damage / (1 + defense/100.0)
 	hp -= final_damage
+	
+	# DEBUG: 打印怪物受到伤害信息
+	print("怪物受伤: %s, 受到伤害: %.1f, 实际伤害: %.1f, 剩余HP: %.1f/%.1f, 防御: %.1f" % [
+		enemy_type if not enemy_type.is_empty() else name,
+		damage,
+		final_damage,
+		hp,
+		max_hp,
+		defense
+	])
+	
 	damage_animation()
 	
 	# 更新HP条

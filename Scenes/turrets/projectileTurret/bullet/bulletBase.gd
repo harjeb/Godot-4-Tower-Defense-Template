@@ -47,6 +47,16 @@ func _on_area_2d_area_entered(area):
 		
 		# 使用增强的伤害计算
 		var final_damage = calculate_enhanced_damage(target_element)
+		
+		# DEBUG: 打印塔攻击信息
+		if source_tower:
+			print("塔攻击: %s -> 怪物 %s, 伤害: %.1f, 元素: %s" % [
+				source_tower.name if source_tower.has_method("get_name") else "未知塔", 
+				obj.name if obj.has_method("get_name") else "未知怪物", 
+				final_damage, 
+				element
+			])
+		
 		obj.get_damage(final_damage)
 		
 		# 应用宝石效果
