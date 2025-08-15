@@ -31,18 +31,57 @@ func setup_ui():
 	panel.size = Vector2(400, 500)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	panel.position = Vector2(100, 100)
+	
+	# 添加背景样式
+	var style_box = StyleBoxFlat.new()
+	style_box.bg_color = Color(0.15, 0.15, 0.15, 0.9)  # 深灰色背景
+	style_box.border_width_left = 2
+	style_box.border_width_right = 2
+	style_box.border_width_top = 2
+	style_box.border_width_bottom = 2
+	style_box.border_color = Color(0.4, 0.4, 0.4, 0.8)  # 边框颜色
+	style_box.corner_radius_top_left = 8
+	style_box.corner_radius_top_right = 8
+	style_box.corner_radius_bottom_left = 8
+	style_box.corner_radius_bottom_right = 8
+	panel.add_theme_stylebox_override("panel", style_box)
+	
 	add_child(panel)
 	
-	# 创建标题（作为拖拽区域）
+	# 创建标题（显示在拖拽区域内）
 	title_label = Label.new()
-	title_label.text = "背包"
+	title_label.text = "📦 背包 (拖拽移动)"
 	title_label.position = Vector2(10, 10)
-	title_label.size = Vector2(200, 30)
+	title_label.size = Vector2(300, 30)
 	title_label.add_theme_color_override("font_color", Color.WHITE)
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	panel.add_child(title_label)
 	
-	# 添加拖拽功能到整个面板
-	setup_panel_dragging(panel)
+	# 创建专门的拖拽区域
+	var drag_area = Control.new()
+	drag_area.position = Vector2(0, 0)
+	drag_area.size = Vector2(400, 45)  # 覆盖标题栏区域
+	drag_area.tooltip_text = "拖拽此区域移动窗口"  # 添加提示
+	
+	# 添加拖拽区域的视觉背景 - 使用更明显的颜色
+	var drag_background = ColorRect.new()
+	drag_background.size = Vector2(400, 45)
+	drag_background.color = Color(0.25, 0.25, 0.3, 0.6)  # 更明显的蓝灰色背景
+	drag_area.add_child(drag_background)
+	
+	# 添加拖拽区域的边框
+	var drag_border = NinePatchRect.new()
+	drag_border.size = Vector2(400, 45)
+	var border_style = StyleBoxFlat.new()
+	border_style.bg_color = Color.TRANSPARENT
+	border_style.border_width_bottom = 1
+	border_style.border_color = Color(0.6, 0.6, 0.6, 0.5)
+	drag_background.add_theme_stylebox_override("panel", border_style)
+	
+	panel.add_child(drag_area)
+	
+	# 添加拖拽功能到拖拽区域
+	setup_panel_dragging(drag_area)
 	
 	# 创建关闭按钮
 	close_button = Button.new()
@@ -120,8 +159,17 @@ func get_inventory_manager() -> Node:
 var dragging = false
 var drag_start_position = Vector2.ZERO
 
-func setup_panel_dragging(panel_node: Panel):
-	panel_node.gui_input.connect(_on_panel_input)
+func setup_panel_dragging(control_node: Control):
+	control_node.gui_input.connect(_on_panel_input)
+	control_node.mouse_entered.connect(_on_drag_area_mouse_entered)
+	control_node.mouse_exited.connect(_on_drag_area_mouse_exited)
+
+func _on_drag_area_mouse_entered():
+	Input.set_default_cursor_shape(Input.CURSOR_DRAG)
+
+func _on_drag_area_mouse_exited():
+	if not dragging:
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 
 func _on_panel_input(event: InputEvent):
 	if event is InputEventMouseButton:
@@ -131,6 +179,7 @@ func _on_panel_input(event: InputEvent):
 				drag_start_position = event.global_position - position
 			else:
 				dragging = false
+				Input.set_default_cursor_shape(Input.CURSOR_ARROW)  # 拖拽结束时恢复光标
 	elif event is InputEventMouseMotion and dragging:
 		position = event.global_position - drag_start_position
 

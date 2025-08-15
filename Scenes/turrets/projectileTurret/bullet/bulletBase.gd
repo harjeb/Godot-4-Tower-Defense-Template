@@ -22,10 +22,17 @@ var equipped_gem: Dictionary = {}
 var source_tower: Node = null  # 发射这个子弹的塔
 var gem_effects: Array = []      # 宝石效果列表
 
+func _ready():
+	# 设置子弹的z_index确保显示在敌人上方
+	z_index = 10
+	# 启动动画
+	$AnimatedSprite2D.play("default")
+	print("子弹已创建! 类型: %s, 位置: %s" % [bullet_type, position])
+
 func _process(delta):
 	if target:
 		if not direction: 
-			direction= (target - position).normalized()
+			direction = (target - position).normalized()
 		position += direction * speed * delta
 
 func _on_area_2d_area_entered(area):

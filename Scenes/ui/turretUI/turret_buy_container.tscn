@@ -5,6 +5,7 @@
 
 [node name="TurretBuyContainer" type="PanelContainer"]
 custom_minimum_size = Vector2(64, 64)
+mouse_filter = 0
 script = ExtResource("1_7686v")
 
 [node name="TextureRect" type="TextureRect" parent="."]

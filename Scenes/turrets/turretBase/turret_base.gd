@@ -163,8 +163,9 @@ func _setup_turret_data(value: String) -> void:
 		var texture = Data.load_resource_safe(turret_data["sprite"], "Texture2D")
 		if texture:
 			sprite_node.texture = texture
-			var scale_value = turret_data.get("scale") if turret_data.has("scale") else 1.0
-			sprite_node.scale = Vector2(scale_value, scale_value)
+			# 统一所有塔的显示尺寸为64x64像素（与碰撞区域一致）
+			var uniform_scale = 64.0 / max(texture.get_width(), texture.get_height())
+			sprite_node.scale = Vector2(uniform_scale, uniform_scale)
 	
 	rotates = turret_data.get("rotates") if turret_data.has("rotates") else false
 	element = turret_data.get("element") if turret_data.has("element") else "neutral"

@@ -1093,6 +1093,7 @@ func create_health_bar():
 	health_bar_container = Control.new()
 	health_bar_container.size = Vector2(40, 8)
 	health_bar_container.position = Vector2(-20, -45)  # 在敌人头上方
+	health_bar_container.z_index = 20  # 确保HP条显示在最上层
 	add_child(health_bar_container)
 	
 	# 创建背景条

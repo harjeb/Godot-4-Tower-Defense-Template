@@ -30,13 +30,30 @@ func setup_ui():
 	var panel = Panel.new()
 	panel.size = Vector2(400, 400)
 	panel.position = Vector2(100, 100)
+	
+	# 添加背景样式（与物品包保持一致）
+	var style_box = StyleBoxFlat.new()
+	style_box.bg_color = Color(0.15, 0.15, 0.15, 0.9)  # 深灰色背景
+	style_box.border_width_left = 2
+	style_box.border_width_right = 2
+	style_box.border_width_top = 2
+	style_box.border_width_bottom = 2
+	style_box.border_color = Color(0.4, 0.4, 0.4, 0.8)  # 边框颜色
+	style_box.corner_radius_top_left = 8
+	style_box.corner_radius_top_right = 8
+	style_box.corner_radius_bottom_left = 8
+	style_box.corner_radius_bottom_right = 8
+	panel.add_theme_stylebox_override("panel", style_box)
+	
 	add_child(panel)
 	
 	# 创建标题
 	title_label = Label.new()
-	title_label.text = "武器盘"
+	title_label.text = "⚔️ 武器盘 (拖拽移动)"
 	title_label.position = Vector2(10, 10)
-	title_label.size = Vector2(200, 30)
+	title_label.size = Vector2(300, 30)
+	title_label.add_theme_color_override("font_color", Color.WHITE)
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	panel.add_child(title_label)
 	
 	# 添加拖拽功能

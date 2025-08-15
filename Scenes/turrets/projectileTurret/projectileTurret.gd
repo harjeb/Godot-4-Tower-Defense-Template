@@ -21,6 +21,10 @@ func attack():
 		try_get_closest_target()
 
 func fire_projectile(projectile_index: int, total_count: int):
+	if not Globals.projectiles_node:
+		print("ERROR: Globals.projectiles_node is null!")
+		return
+	
 	var projectileScene := preload("res://Scenes/turrets/projectileTurret/bullet/bulletBase.tscn")
 	var projectile := projectileScene.instantiate()
 	projectile.bullet_type = Data.turrets[turret_type]["bullet"]
@@ -31,7 +35,8 @@ func fire_projectile(projectile_index: int, total_count: int):
 	projectile.source_tower = self  # 设置发射塔的引用
 	
 	# 设置宝石效果
-	projectile.setup_gem_effects(self)
+	if projectile.has_method("setup_gem_effects"):
+		projectile.setup_gem_effects(self)
 	
 	# Apply projectile speed talent boost
 	var speed_multiplier = 1.0
@@ -45,13 +50,15 @@ func fire_projectile(projectile_index: int, total_count: int):
 	if total_count > 1:
 		spread_angle = (projectile_index - (total_count - 1) / 2.0) * 0.2  # 0.2 radians spread
 	
-	Globals.projectiles_node.add_child(projectile)
-	projectile.position = position
-	
 	# Apply spread to target direction
 	var target_direction = (current_target.position - position).normalized()
 	var spread_direction = target_direction.rotated(spread_angle)
 	projectile.target = position + spread_direction * 1000  # Extend far enough
+	
+	Globals.projectiles_node.add_child(projectile)
+	projectile.position = position
+	
+	print("子弹发射! 类型: %s, 位置: %s, 目标: %s, 速度: %s" % [projectile.bullet_type, projectile.position, projectile.target, projectile.speed])
 
 func create_da_ta_effect(attack_count: int):
 	# Create visual indicator for DA/TA attacks
