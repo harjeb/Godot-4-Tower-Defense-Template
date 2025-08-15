@@ -79,8 +79,7 @@ func _ready() -> void:
 	setup_ui_components()
 	
 	# Connect to global signals
-	if Globals.has_signal("enemy_destroyed"):
-		Globals.connect("enemy_destroyed", _on_enemy_destroyed)
+	# Note: Globals reference removed to avoid compilation error
 
 func _process(delta: float) -> void:
 	if is_respawning:

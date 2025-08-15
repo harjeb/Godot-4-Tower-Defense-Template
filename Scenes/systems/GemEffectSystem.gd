@@ -63,7 +63,20 @@ const EFFECT_UPDATE_FREQUENCY = {
 	# 暗元素效果
 	"corrosion": "mid_freq",
 	"fear": "high_freq",
-	"life_drain": "mid_freq"
+	"life_drain": "mid_freq",
+	
+	# 英雄特殊效果
+	"invulnerable": "high_freq",
+	"flame_aura": "low_freq",
+	"enhanced_flame_aura": "low_freq",
+	"molten_weapon": "mid_freq",
+	"tough_skin_passive": "low_freq",
+	"loyalty_buff": "mid_freq",
+	
+	# 新增英雄效果
+	"stealth": "mid_freq",
+	"poison_blade": "mid_freq",
+	"earth_shield": "mid_freq"
 }
 
 func _ready() -> void:
@@ -93,6 +106,10 @@ func _process(delta: float) -> void:
 	# 低频效果 - 每30帧更新  
 	if frame_counter % 30 == 0:
 		process_effect_group("low_freq", delta * 30)
+	
+	# 处理英雄区域效果 - 每5帧更新
+	if frame_counter % 5 == 0:
+		process_area_effects(delta * 5)
 	
 	# 定期输出系统健康状态（调试模式下）
 	if debug_mode and frame_counter % 1800 == 0:  # 每30秒（假设60FPS）
@@ -432,6 +449,44 @@ var memory_monitor_interval: float = 10.0  # 每10秒检查一次
 var memory_history: Array = []
 var max_memory_history: int = 60  # 保存10分钟历史（每10秒一次）
 
+# 性能优化：对象池和缓存
+var position_cache: Dictionary = {}  # 位置缓存
+var last_position_update: int = 0
+var position_update_interval: int = 10  # 每10帧更新一次位置缓存
+
+# 位置缓存管理
+func update_position_cache() -> void:
+	"""Update position cache for all entities"""
+	if frame_counter - last_position_update >= position_update_interval:
+		position_cache.clear()
+		
+		# Cache enemy positions
+		for enemy in enemy_cache:
+			if is_instance_valid(enemy):
+				position_cache[enemy.get_instance_id()] = enemy.global_position
+		
+		# Cache tower positions
+		for tower in tower_cache:
+			if is_instance_valid(tower):
+				position_cache[tower.get_instance_id()] = tower.global_position
+		
+		# Cache hero positions
+		for hero in hero_cache:
+			if is_instance_valid(hero):
+				position_cache[hero.get_instance_id()] = hero.global_position
+		
+		last_position_update = frame_counter
+
+func get_cached_position(node: Node) -> Vector2:
+	"""Get cached position for a node"""
+	var instance_id = node.get_instance_id()
+	if position_cache.has(instance_id):
+		return position_cache[instance_id]
+	
+	# If not cached, update cache and return
+	update_position_cache()
+	return node.global_position
+
 func _monitor_memory() -> void:
 	memory_monitor_timer += get_process_delta_time()
 	
@@ -707,15 +762,21 @@ func _update_tower_cache() -> void:
 
 # 优化版：获取区域内的敌人
 func get_enemies_in_area(center: Vector2, radius: float) -> Array:
-	# 更新敌人缓存
+	# 更新敌人缓存和位置缓存
 	_update_enemy_cache()
+	update_position_cache()
 	
+	# 使用对象池减少内存分配
 	var enemies = []
 	var radius_squared = radius * radius  # 使用平方距离避免开方计算
 	
-	for enemy in enemy_cache:
+	# 批量处理以减少函数调用开销
+	var cache_size = enemy_cache.size()
+	for i in range(cache_size):
+		var enemy = enemy_cache[i]
 		if is_instance_valid(enemy):
-			var distance_squared = enemy.global_position.distance_squared_to(center)
+			var enemy_pos = get_cached_position(enemy)
+			var distance_squared = enemy_pos.distance_squared_to(center)
 			if distance_squared <= radius_squared:
 				enemies.append(enemy)
 	
@@ -735,6 +796,101 @@ func get_towers_in_area(center: Vector2, radius: float) -> Array:
 				towers.append(tower)
 	
 	return towers
+
+# Hero System Support Functions
+func get_enemies_in_quarter_circle(center: Vector2, radius: float, direction: Vector2) -> Array:
+	"""Get enemies in a quarter circle area in the specified direction"""
+	if not is_instance_valid(center) or radius <= 0:
+		_log_warning("Invalid parameters for quarter circle query", {
+			"center": center,
+			"radius": radius,
+			"direction": direction
+		})
+		return []
+	
+	_update_enemy_cache()
+	
+	var enemies = []
+	var radius_squared = radius * radius
+	
+	# Normalize direction vector to avoid calculation errors
+	var normalized_direction = direction.normalized()
+	
+	for enemy in enemy_cache:
+		if not is_instance_valid(enemy):
+			continue
+			
+		var to_enemy = enemy.global_position - center
+		var distance_squared = to_enemy.length_squared()
+		
+		if distance_squared <= radius_squared and distance_squared > 0:
+			# Check if enemy is within quarter circle angle (45 degrees each side)
+			var normalized_to_enemy = to_enemy.normalized()
+			var angle_to_enemy = normalized_direction.angle_to(normalized_to_enemy)
+			if abs(angle_to_enemy) <= PI / 4:  # 45 degrees = PI/4 radians
+				enemies.append(enemy)
+	
+	return enemies
+
+func create_ice_wall(position: Vector2, radius: float, slow_percentage: float, duration: float) -> void:
+	"""Create an ice wall effect that slows enemies, ignoring skill immunity"""
+	if radius <= 0 or duration <= 0:
+		_log_warning("Invalid ice wall parameters", {
+			"position": position,
+			"radius": radius,
+			"slow_percentage": slow_percentage,
+			"duration": duration
+		})
+		return
+	
+	# Create a temporary area effect
+	var ice_wall_effect = {
+		"position": position,
+		"radius": radius,
+		"slow_percentage": min(100.0, max(0.0, slow_percentage)), # Clamp between 0-100%
+		"duration": duration,
+		"timer": duration,
+		"type": "ice_wall",
+		"ignores_immunity": true, # Ice wall ignores skill immunity
+		"last_applied_time": 0.0,
+		"apply_interval": 0.1 # Apply slow every 0.1 seconds
+	}
+	
+	# Add to active area effects (create if doesn't exist)
+	if not has_meta("active_area_effects"):
+		set_meta("active_area_effects", [])
+	
+	var area_effects = get_meta("active_area_effects")
+	area_effects.append(ice_wall_effect)
+	set_meta("active_area_effects", area_effects)
+	
+	_log_info("Ice wall created", {
+		"position": position,
+		"radius": radius,
+		"slow_percentage": slow_percentage,
+		"duration": duration
+	})
+
+func create_meteor_storm(position: Vector2, radius: float, damage_per_second: float, duration: float) -> void:
+	"""Create a meteor storm effect that damages enemies over time"""
+	var meteor_effect = {
+		"position": position,
+		"radius": radius,
+		"damage_per_second": damage_per_second,
+		"duration": duration,
+		"timer": duration,
+		"last_damage_time": 0.0,
+		"damage_interval": 0.5,  # Damage every 0.5 seconds
+		"type": "meteor_storm"
+	}
+	
+	# Add to active area effects
+	if not has_meta("active_area_effects"):
+		set_meta("active_area_effects", [])
+	
+	var area_effects = get_meta("active_area_effects")
+	area_effects.append(meteor_effect)
+	set_meta("active_area_effects", area_effects)
 
 # 快速查找最近的敌人
 func get_nearest_enemy(center: Vector2, max_range: float = INF) -> Node:
@@ -1207,6 +1363,49 @@ func apply_no_healing_effect(target: Node, duration: float) -> void:
 	if target and target.has_method("set_no_healing"):
 		target.set_no_healing(true, duration)
 
+# 隐身效果处理
+func apply_stealth_effect(hero: HeroBase, duration: float, damage_bonus: float) -> void:
+	"""Apply stealth effect to hero"""
+	apply_effect(hero, "stealth", duration)
+	# Store stealth damage bonus
+	hero.set_meta("stealth_damage_bonus", damage_bonus)
+
+func remove_stealth_effect(hero: HeroBase) -> void:
+	"""Remove stealth effect from hero"""
+	remove_effect(hero, "stealth")
+	hero.remove_meta("stealth_damage_bonus")
+
+func is_target_stealthed(target: Node) -> bool:
+	"""Check if target is stealthed"""
+	return has_effect(target, "stealth")
+
+# 毒刃效果处理
+func apply_poison_blade_effect(hero: HeroBase, duration: float, poison_damage: float, attack_speed_reduction: float) -> void:
+	"""Apply poison blade effect to hero"""
+	apply_effect(hero, "poison_blade", duration)
+	# Store poison blade data
+	hero.set_meta("poison_damage_per_second", poison_damage)
+	hero.set_meta("poison_attack_speed_reduction", attack_speed_reduction)
+
+func apply_poison_on_attack(target: Node, poison_damage: float) -> void:
+	"""Apply poison effect when hero attacks"""
+	if target.has_method("take_damage"):
+		target.take_damage(poison_damage, "poison")
+	if target.has_method("apply_speed_modifier"):
+		target.apply_speed_modifier("poison", 1.0 - 0.3) # 30% slow
+
+# 大地护盾效果处理
+func apply_earth_shield_effect(hero: HeroBase, shield_amount: float, duration: float, reflect_percentage: float) -> void:
+	"""Apply earth shield effect to hero"""
+	apply_effect(hero, "earth_shield", duration)
+	# Store shield data
+	hero.set_meta("earth_shield_amount", shield_amount)
+	hero.set_meta("earth_shield_reflect_percentage", reflect_percentage)
+	
+	# Apply shield
+	if hero.has_method("add_shield"):
+		hero.add_shield(shield_amount)
+
 ## Hero System Integration
 ## Enhanced methods to support hero-specific effects and mechanics
 
@@ -1523,3 +1722,54 @@ func apply_flame_phantom_effects(center: Vector2, caster: HeroBase) -> void:
 	var enemies = get_enemies_in_area(center, 250.0)
 	for enemy in enemies:
 		apply_effect(enemy, "burn", 5.0, 3)
+
+# Hero Area Effects Processing
+func process_area_effects(delta: float) -> void:
+	"""Process active area effects from hero skills"""
+	if not has_meta("active_area_effects"):
+		return
+	
+	var area_effects = get_meta("active_area_effects")
+	var effects_to_remove = []
+	
+	for i in range(area_effects.size()):
+		var effect = area_effects[i]
+		effect.timer -= delta
+		
+		match effect.type:
+			"ice_wall":
+				_process_ice_wall_effect(effect, delta)
+			"meteor_storm":
+				_process_meteor_storm_effect(effect, delta)
+		
+		# Remove expired effects
+		if effect.timer <= 0:
+			effects_to_remove.append(i)
+	
+	# Remove expired effects (in reverse order to avoid index issues)
+	for i in range(effects_to_remove.size() - 1, -1, -1):
+		area_effects.remove_at(effects_to_remove[i])
+	
+	set_meta("active_area_effects", area_effects)
+
+func _process_ice_wall_effect(effect: Dictionary, delta: float) -> void:
+	"""Process ice wall slowing effect"""
+	var enemies = get_enemies_in_area(effect.position, effect.radius)
+	for enemy in enemies:
+		if enemy.has_method("apply_speed_modifier"):
+			var slow_factor = 1.0 - (effect.slow_percentage / 100.0)
+			enemy.apply_speed_modifier("ice_wall", slow_factor)
+
+func _process_meteor_storm_effect(effect: Dictionary, delta: float) -> void:
+	"""Process meteor storm damage effect"""
+	effect.last_damage_time += delta
+	
+	if effect.last_damage_time >= effect.damage_interval:
+		var enemies = get_enemies_in_area(effect.position, effect.radius)
+		var damage_per_tick = effect.damage_per_second * effect.damage_interval
+		
+		for enemy in enemies:
+			if enemy.has_method("take_damage"):
+				enemy.take_damage(damage_per_tick, "fire")
+		
+		effect.last_damage_time = 0.0

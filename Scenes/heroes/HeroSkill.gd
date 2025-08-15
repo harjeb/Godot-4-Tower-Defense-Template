@@ -88,6 +88,22 @@ func check_skill_specific_requirements(hero: HeroBase) -> bool:
 			# Can cast if no phantom already summoned
 			return not has_active_phantom(hero)
 		
+		"tough_skin":
+			# 被动技能始终可用
+			return true
+		
+		"flame_sword":
+			# 需要有攻击目标才能激活
+			return hero.attack_target != null and is_instance_valid(hero.attack_target)
+		
+		"loyalty_reward":
+			# 需要有其他火/光英雄才有意义
+			return has_fire_or_light_heroes(hero)
+		
+		"meteor_impact":
+			# 需要前方有效目标区域
+			return has_valid_target_area(hero)
+		
 		_:
 			# Default: can always cast
 			return true
@@ -111,6 +127,23 @@ func has_active_phantom(hero: HeroBase) -> bool:
 			return true
 	
 	return false
+
+func has_fire_or_light_heroes(hero: HeroBase) -> bool:
+	"""Check if there are other fire/light heroes"""
+	var tree = hero.get_tree()
+	if not tree or not tree.current_scene:
+		return false
+	
+	var heroes = tree.current_scene.get_tree().get_nodes_in_group("heroes")
+	for other_hero in heroes:
+		if other_hero != hero and other_hero.element in ["fire", "light"]:
+			return true
+	return false
+
+func has_valid_target_area(hero: HeroBase) -> bool:
+	"""Check if there is a valid target area for meteor impact"""
+	# 简化实现，假设总是有有效目标区域
+	return true
 
 func start_cooldown() -> void:
 	"""Start skill cooldown"""

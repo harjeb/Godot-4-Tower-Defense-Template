@@ -3799,6 +3799,60 @@ var heroes := {
 		"charge_generation": 2.5,
 		"max_charge": 100,
 		"description": "暗系刺客英雄，拥有高爆发和隐身能力"
+	},
+	"frost_fire_knight": {
+		"name": "霜火骑士",
+		"element": "fire",
+		"base_stats": {
+			"max_hp": 450,
+			"damage": 65,
+			"defense": 12,
+			"attack_speed": 1.1,
+			"attack_range": 180.0,
+			"movement_speed": 0.0
+		},
+		"skills": ["fire_burst", "frost_path", "molten_weapon"],
+		"sprite": "res://Assets/heroes/frost_fire_knight.png",
+		"scene": "res://Scenes/heroes/HeroBase.tscn",
+		"charge_generation": 2.0,
+		"max_charge": 100,
+		"description": "火系近战英雄，拥有火焰爆发和冰霜控制技能"
+	},
+	"fire_stone_golem": {
+		"name": "火石傀儡",
+		"element": "fire", 
+		"base_stats": {
+			"max_hp": 580,
+			"damage": 48,
+			"defense": 18,
+			"attack_speed": 0.8,
+			"attack_range": 160.0,
+			"movement_speed": 0.0
+		},
+		"skills": ["earth_slam", "tough_skin", "meteor_impact"],
+		"sprite": "res://Assets/heroes/fire_stone_golem.png",
+		"scene": "res://Scenes/heroes/HeroBase.tscn",
+		"charge_generation": 1.8,
+		"max_charge": 100,
+		"description": "火系坦克英雄，拥有地震和陨石技能"
+	},
+	"radiant_arbiter": {
+		"name": "辉光仲裁史",
+		"element": "fire",
+		"base_stats": {
+			"max_hp": 380,
+			"damage": 52,
+			"defense": 8,
+			"attack_speed": 1.3,
+			"attack_range": 200.0,
+			"movement_speed": 0.0
+		},
+		"skills": ["holy_heal", "flame_sword", "loyalty_reward"],
+		"sprite": "res://Assets/heroes/radiant_arbiter.png", 
+		"scene": "res://Scenes/heroes/HeroBase.tscn",
+		"charge_generation": 2.2,
+		"max_charge": 100,
+		"description": "火系支援英雄，拥有治疗和增益技能"
 	}
 }
 
@@ -3845,6 +3899,228 @@ var hero_skills := {
 		"burn_stacks": 3,
 		"description": "召唤火焰幻象协同作战，大幅增强周围火焰效果",
 		"icon": "res://Assets/skills/flame_phantom.png"
+	},
+	# 霜火骑士技能
+	"fire_burst": {
+		"name": "大字火",
+		"type": "A",
+		"charge_cost": 15,
+		"cooldown": 6.0,
+		"cast_range": 0.0,
+		"effect_radius": 150.0,
+		"damage_base": 150,
+		"damage_scaling": 0.8,
+		"area_type": "quarter_circle",
+		"element": "fire",
+		"description": "前方1/4圆形区域喷射火焰，造成150点火伤害"
+	},
+	"frost_path": {
+		"name": "冰霜路径",
+		"type": "B",
+		"charge_cost": 25,
+		"cooldown": 12.0,
+		"cast_range": 0.0,
+		"effect_radius": 20.0,
+		"slow_percentage": 80,
+		"duration": 4.0,
+		"ignore_immunity": true,
+		"description": "在脚下放置冰墙，减速80%持续4秒，无视技能免疫"
+	},
+	"molten_weapon": {
+		"name": "熔岩武器",
+		"type": "C", 
+		"charge_cost": 50,
+		"cooldown": 90.0,
+		"duration": 30.0,
+		"melt_damage_per_second": 80,
+		"melt_duration": 6.0,
+		"freeze_combo_damage": 30,
+		"freeze_combo_element": "ice",
+		"description": "武器化为熔岩，攻击施加融化效果，配合冰属性产生汽化伤害"
+	},
+	# 火石傀儡技能
+	"earth_slam": {
+		"name": "震撼大地",
+		"type": "A",
+		"charge_cost": 10,
+		"cooldown": 6.0,
+		"cast_range": 0.0,
+		"effect_radius": 120.0,
+		"damage_base": 100,
+		"stun_duration": 1.5,
+		"description": "践踏脚下范围，造成100点伤害和1.5秒眩晕"
+	},
+	"tough_skin": {
+		"name": "坚韧皮肤",
+		"type": "B",
+		"charge_cost": 0,
+		"cooldown": 0.0,
+		"earth_heal_percentage": 10,
+		"fire_kill_attack_bonus": 1,
+		"passive": true,
+		"description": "被动：土属性塔伤害时回复10%生命，火属性塔击杀时永久+1攻击"
+	},
+	"meteor_impact": {
+		"name": "陨石冲击",
+		"type": "C",
+		"charge_cost": 60,
+		"cooldown": 60.0,
+		"cast_range": 250.0,
+		"effect_radius": 180.0,
+		"damage_per_second": 150,
+		"duration": 8.0,
+		"element": "fire",
+		"description": "前方区域陨石雨，造成150/秒火伤害，持续8秒"
+	},
+	# 辉光仲裁史技能
+	"holy_heal": {
+		"name": "神圣治愈",
+		"type": "A",
+		"charge_cost": 20,
+		"cooldown": 7.0,
+		"heal_amount": 200,
+		"fire_light_bonus": 60,
+		"target_type": "all_heroes",
+		"description": "恢复所有英雄200生命，火/光英雄额外回复60点"
+	},
+	"flame_sword": {
+		"name": "烈火剑",
+		"type": "B",
+		"charge_cost": 5,
+		"cooldown": 0.0,
+		"attack_count_trigger": 4,
+		"da_attack_bonus": 60,
+		"description": "每攻击4次，造成一次DA攻击，且增加60点攻击"
+	},
+	"loyalty_reward": {
+		"name": "忠诚奖赏", 
+		"type": "C",
+		"charge_cost": 30,
+		"cooldown": 6.0,
+		"loyalty_duration": 5.0,
+		"target_elements": ["fire", "light"],
+		"guaranteed_da": true,
+		"description": "每次触发DA时，所有火/光英雄获得忠诚BUFF，5秒内攻击必定DA"
+	},
+	
+	# 霜弓射手技能
+	"ice_arrow": {
+		"name": "冰霜箭",
+		"type": "A",
+		"charge_cost": 15,
+		"cooldown": 4.0,
+		"damage_base": 60,
+		"slow_percentage": 30,
+		"slow_duration": 2.0,
+		"description": "发射冰霜箭，造成伤害并减速敌人"
+	},
+	"frost_armor": {
+		"name": "冰霜护甲",
+		"type": "B",
+		"charge_cost": 30,
+		"cooldown": 15.0,
+		"duration": 20.0,
+		"defense_bonus": 20,
+		"slow_aura_radius": 150.0,
+		"slow_aura_percentage": 20,
+		"description": "增加防御力，周围敌人被减速"
+	},
+	"blizzard": {
+		"name": "暴风雪",
+		"type": "C",
+		"charge_cost": 50,
+		"cooldown": 30.0,
+		"effect_radius": 200.0,
+		"damage_per_second": 40,
+		"duration": 6.0,
+		"freeze_chance": 0.2,
+		"description": "召唤暴风雪，造成持续伤害和冻结效果"
+	},
+	
+	# 雷霆法师技能
+	"lightning_bolt": {
+		"name": "闪电箭",
+		"type": "A",
+		"charge_cost": 12,
+		"cooldown": 3.0,
+		"damage_base": 80,
+		"chain_count": 1,
+		"description": "发射闪电箭，可弹射到附近敌人"
+	},
+	"thunder_storm": {
+		"name": "雷暴",
+		"type": "B",
+		"charge_cost": 35,
+		"cooldown": 18.0,
+		"effect_radius": 180.0,
+		"damage_base": 120,
+		"stun_chance": 0.3,
+		"stun_duration": 1.0,
+		"description": "召唤雷暴，对范围内敌人造成伤害和眩晕"
+	},
+	"chain_lightning": {
+		"name": "连锁闪电",
+		"type": "C",
+		"charge_cost": 45,
+		"cooldown": 25.0,
+		"damage_base": 100,
+		"chain_count": 4,
+		"damage_reduction_per_chain": 0.8,
+		"description": "发射连锁闪电，跳跃多个敌人"
+	},
+	
+	# 大地守护者技能
+	"rock_throw": {
+		"name": "投石",
+		"type": "A",
+		"charge_cost": 10,
+		"cooldown": 3.0,
+		"damage_base": 50,
+		"stun_chance": 0.2,
+		"stun_duration": 0.5,
+		"description": "投掷岩石，造成伤害并有机会眩晕敌人"
+	},
+	"earth_shield": {
+		"name": "大地护盾",
+		"type": "B",
+		"charge_cost": 25,
+		"cooldown": 20.0,
+		"shield_amount": 400,
+		"duration": 15.0,
+		"damage_reflect_percentage": 20,
+		"description": "获得护盾，反弹部分伤害"
+	},
+	"earthquake": {
+		"name": "地震",
+		"type": "C",
+		"charge_cost": 60,
+		"cooldown": 40.0,
+		"effect_radius": 250.0,
+		"damage_base": 150,
+		"stun_duration": 2.0,
+		"slow_duration": 5.0,
+		"description": "引发地震，大范围伤害和眩晕"
+	},
+	
+	# 暗影刺客技能
+	"stealth": {
+		"name": "隐身",
+		"type": "B",
+		"charge_cost": 20,
+		"cooldown": 10.0,
+		"duration": 5.0,
+		"damage_bonus": 50,
+		"description": "进入隐身状态，下次攻击获得伤害加成"
+	},
+	"poison_blade": {
+		"name": "毒刃",
+		"type": "C",
+		"charge_cost": 30,
+		"cooldown": 15.0,
+		"duration": 10.0,
+		"poison_damage_per_second": 25,
+		"attack_speed_reduction": 0.3,
+		"description": "武器淬毒，攻击附加持续毒伤害"
 	}
 }
 
